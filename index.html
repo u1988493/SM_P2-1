@@ -14,9 +14,78 @@
             align-items: center;
         }
 
+        .header {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 13px;
+            transition: all 0.3s;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #0078d4;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #106ebe;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
         #estat {
             color: #333;
             margin-bottom: 10px;
+            font-weight: bold;
         }
 
         #joc {
@@ -70,6 +139,22 @@
     </style>
 </head>
 <body>
+    <!-- Header con información del usuario -->
+    <div id="userHeader" class="header">
+        <div class="user-info">
+            <div class="user-avatar" id="userAvatar">👤</div>
+            <div>
+                <div id="userName" style="font-weight: bold;">Convidat</div>
+                <div id="userStatus" style="font-size: 12px; color: #666;">Mode invitat</div>
+            </div>
+        </div>
+        <div class="nav-buttons">
+            <a href="/perfil.php" class="btn btn-primary" id="perfilBtn" style="display:none;">👤 Perfil</a>
+            <a href="/.auth/login/aad?post_login_redirect_uri=/index.html" class="btn btn-primary" id="loginBtn">Iniciar Sessió</a>
+            <a href="/.auth/logout?post_logout_redirect_uri=/login.php" class="btn btn-secondary" id="logoutBtn" style="display:none;">Tancar Sessió</a>
+        </div>
+    </div>
+
     <h1 id="estat">Connectant al joc...</h1>
     <div id="joc">
         <h2 id="puntuacio">Jugador 1: 0 | Jugador 2: 0</h2>
@@ -88,6 +173,62 @@
         let idJoc, idJugador;
         let esPrimerJugador = false;
         let guanyador = null;
+        let isAuthenticated = false;
+        let currentUserName = 'Convidat';
+        
+        // Detectar si el usuario está autenticado
+        async function checkAuthentication() {
+            try {
+                // Hacer una petición simple para verificar autenticación
+                const response = await fetch('/game.php?action=join', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                // Si el player_id no empieza con 'guest_', está autenticado
+                if (data.player_id && !data.player_id.startsWith('guest_')) {
+                    isAuthenticated = true;
+                    
+                    // Actualizar UI para usuario autenticado
+                    document.getElementById('loginBtn').style.display = 'none';
+                    document.getElementById('perfilBtn').style.display = 'inline-block';
+                    document.getElementById('logoutBtn').style.display = 'inline-block';
+                    
+                    // Obtener nombre del usuario desde las partidas
+                    try {
+                        const statusResponse = await fetch(`/game.php?action=status&game_id=${data.game_id}`);
+                        const statusData = await statusResponse.json();
+                        
+                        if (statusData.player1 === data.player_id && statusData.player1_name) {
+                            currentUserName = statusData.player1_name;
+                            updateUserDisplay(currentUserName, true);
+                        } else if (statusData.player2 === data.player_id && statusData.player2_name) {
+                            currentUserName = statusData.player2_name;
+                            updateUserDisplay(currentUserName, true);
+                        }
+                    } catch (e) {
+                        console.log('No se pudo obtener nombre de usuario');
+                    }
+                } else {
+                    // Usuario invitado
+                    document.getElementById('loginBtn').style.display = 'inline-block';
+                    document.getElementById('perfilBtn').style.display = 'none';
+                    document.getElementById('logoutBtn').style.display = 'none';
+                    updateUserDisplay('Convidat', false);
+                }
+            } catch (error) {
+                console.error('Error verificando autenticación:', error);
+            }
+        }
+        
+        function updateUserDisplay(userName, authenticated) {
+            document.getElementById('userName').textContent = userName;
+            document.getElementById('userStatus').textContent = authenticated ? 'Usuari registrat' : 'Mode invitat';
+            document.getElementById('userAvatar').textContent = userName.charAt(0).toUpperCase();
+        }
+        
+        // Ejecutar verificación al cargar
+        checkAuthentication();
         
         // Variables del jugador local
         let jugador = {
@@ -172,7 +313,9 @@
 
         // Conectar al servidor del juego
         function unirseAlJoc() {
-            fetch('game.php?action=join')
+            fetch('game.php?action=join', {
+                method: 'POST'
+            })
                 .then(response => response.json())
                 .then(data => {
                     idJoc = data.game_id;
@@ -221,11 +364,21 @@
                         jugador.score = joc.points[1] || 0;
                     }
 
-                    textPuntuacio.innerText = `Jugador 1: ${joc.points[0]} | Jugador 2: ${joc.points[1]}`;
+                    // Mostrar nombres de jugadores
+                    const player1Name = joc.player1_name || 'Jugador 1';
+                    const player2Name = joc.player2_name || 'Jugador 2';
+                    textPuntuacio.textContent = `${player1Name}: ${joc.points[0] || 0} | ${player2Name}: ${joc.points[1] || 0}`;
 
                     if (guanyador) {
                         if (guanyador === idJugador) {
                             textEstat.innerText = '🎉 Has guanyat! 🎉';
+                            if (isAuthenticated) {
+                                setTimeout(() => {
+                                    if (confirm('Vols veure el teu perfil?')) {
+                                        window.location.href = '/perfil.php';
+                                    }
+                                }, 2000);
+                            }
                         } else {
                             textEstat.innerText = '😢 Has perdut!';
                         }
@@ -240,9 +393,9 @@
                             gameLoop();
                         }
                     } else if (esPrimerJugador) {
-                        textEstat.innerText = 'Ets el Jugador 1. Esperant el Jugador 2...';
+                        textEstat.innerText = `Ets ${player1Name}. Esperant el Jugador 2...`;
                     } else {
-                        textEstat.innerText = 'Ets el Jugador 2. Començant partida...';
+                        textEstat.innerText = `Ets ${player2Name}. Començant partida...`;
                     }
 
                     if (!guanyador) {
