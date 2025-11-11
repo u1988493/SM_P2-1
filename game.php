@@ -1,5 +1,5 @@
 <?php
-// game.php - Versión Azure con diseño original
+// game.php - Versión con autenticación Azure
 error_reporting(E_ALL);
 ini_set('display_errors', '0');
 
@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 session_start();
 
-// Conectar a la base de datos usando la función de db.php
+// Conectar a la base de datos
 require_once __DIR__ . '/db.php';
 
 try {
@@ -23,6 +23,24 @@ try {
 } catch (Exception $e) {
     echo json_encode(['error' => 'Connexió amb la base de dades fallida: ' . $e->getMessage()]);
     exit();
+}
+
+// Obtener información de autenticación
+$authInfo = getAzureAuthInfo();
+
+// Si está autenticado con Azure, usar ese ID
+if ($authInfo['isAuthenticated']) {
+    $player_id = $authInfo['userId'];
+    $_SESSION['player_id'] = $player_id;
+    
+    // Crear o actualizar usuario
+    $user = getOrCreateUser($db, $player_id, $authInfo['userName'], $authInfo['userEmail']);
+} else {
+    // Fallback: usar sesión PHP (para desarrollo local)
+    if (!isset($_SESSION['player_id'])) {
+        $_SESSION['player_id'] = 'guest_' . uniqid();
+    }
+    $player_id = $_SESSION['player_id'];
 }
 
 $accio = isset($_GET['action']) ? $_GET['action'] : '';
@@ -48,9 +66,8 @@ function generarPlataformasEstaticas() {
 function generarPlataformaPuntos() {
     $ancho_juego = 400;
     $alto_juego = 600;
-    $puntos = rand(0, 1) == 0 ? 10 : 20; // Aleatoriamente +10 o +20
+    $puntos = rand(0, 1) == 0 ? 10 : 20;
     
-    // Plataformas estáticas para verificar distancia
     $plataformas_estaticas = [
         ['x' => 50, 'y' => 480, 'width' => 80],
         ['x' => 270, 'y' => 480, 'width' => 80],
@@ -94,39 +111,53 @@ function generarPlataformaPuntos() {
     ];
 }
 
+function finalizarPartida($db, $gameId, $winnerId, $player1Id, $player2Id, $score1, $score2) {
+    $stmt = $db->prepare('UPDATE games SET winner_id = ?, finished_at = CURRENT_TIMESTAMP WHERE game_id = ?');
+    $stmt->execute([$winnerId, $gameId]);
+    
+    // Actualizar estadísticas del jugador 1
+    if ($player1Id && strpos($player1Id, 'guest_') !== 0) {
+        $won1 = ($player1Id === $winnerId) ? 1 : 0;
+        $stmt = $db->prepare('UPDATE users SET games_played = games_played + 1, games_won = games_won + ?, total_score = total_score + ? WHERE user_id = ?');
+        $stmt->execute([$won1, $score1, $player1Id]);
+        
+        $stmt = $db->prepare('INSERT INTO game_history (game_id, player_id, score, won) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$gameId, $player1Id, $score1, $won1]);
+    }
+    
+    // Actualizar estadísticas del jugador 2
+    if ($player2Id && strpos($player2Id, 'guest_') !== 0) {
+        $won2 = ($player2Id === $winnerId) ? 1 : 0;
+        $stmt = $db->prepare('UPDATE users SET games_played = games_played + 1, games_won = games_won + ?, total_score = total_score + ? WHERE user_id = ?');
+        $stmt->execute([$won2, $score2, $player2Id]);
+        
+        $stmt = $db->prepare('INSERT INTO game_history (game_id, player_id, score, won) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$gameId, $player2Id, $score2, $won2]);
+    }
+}
+
 switch ($accio) {
     case 'join':
-        if (!isset($_SESSION['player_id'])) {
-            $_SESSION['player_id'] = uniqid();
-        }
-
-        $player_id = $_SESSION['player_id'];
         $game_id = null;
 
         // Intentar unirse a un juego existente donde player2 sea null
-        $stmt = $db->prepare('SELECT game_id FROM games WHERE player2 IS NULL AND winner IS NULL LIMIT 1');
+        $stmt = $db->prepare('SELECT game_id FROM games WHERE player2_id IS NULL AND winner_id IS NULL LIMIT 1');
         $stmt->execute();
         $joc_existent = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($joc_existent) {
             // Unirse al juego existente como player2
             $game_id = $joc_existent['game_id'];
-            $stmt = $db->prepare('UPDATE games SET player2 = :player_id WHERE game_id = :game_id');
-            $stmt->bindValue(':player_id', $player_id);
-            $stmt->bindValue(':game_id', $game_id);
-            $stmt->execute();
+            $stmt = $db->prepare('UPDATE games SET player2_id = ? WHERE game_id = ?');
+            $stmt->execute([$player_id, $game_id]);
         } else {
             // Crear un nuevo juego como player1
             $game_id = uniqid();
             $platforms_estaticas = generarPlataformasEstaticas();
             $platform_puntos = json_encode(generarPlataformaPuntos());
             
-            $stmt = $db->prepare('INSERT INTO games (game_id, player1, platforms, point_platform, player1_x, player1_y, player2_x, player2_y, player1_score, player2_score) VALUES (:game_id, :player_id, :platforms, :point_platform, 50, 550, 350, 550, 0, 0)');
-            $stmt->bindValue(':game_id', $game_id);
-            $stmt->bindValue(':player_id', $player_id);
-            $stmt->bindValue(':platforms', $platforms_estaticas);
-            $stmt->bindValue(':point_platform', $platform_puntos);
-            $stmt->execute();
+            $stmt = $db->prepare('INSERT INTO games (game_id, player1_id, platforms, point_platform, player1_x, player1_y, player2_x, player2_y, player1_score, player2_score) VALUES (?, ?, ?, ?, 50, 550, 350, 550, 0, 0)');
+            $stmt->execute([$game_id, $player_id, $platforms_estaticas, $platform_puntos]);
         }
 
         echo json_encode(['game_id' => $game_id, 'player_id' => $player_id]);
@@ -134,9 +165,8 @@ switch ($accio) {
 
     case 'status':
         $game_id = $_GET['game_id'];
-        $stmt = $db->prepare('SELECT * FROM games WHERE game_id = :game_id');
-        $stmt->bindValue(':game_id', $game_id);
-        $stmt->execute();
+        $stmt = $db->prepare('SELECT * FROM games WHERE game_id = ?');
+        $stmt->execute([$game_id]);
         $joc = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$joc) {
@@ -151,10 +181,30 @@ switch ($accio) {
             if (!$point_platform) {
                 $point_platform = generarPlataformaPuntos();
             }
+            
+            // Obtener nombres de usuarios
+            $player1_name = 'Jugador 1';
+            $player2_name = 'Esperant...';
+            
+            if ($joc['player1_id']) {
+                $stmt = $db->prepare('SELECT username FROM users WHERE user_id = ?');
+                $stmt->execute([$joc['player1_id']]);
+                $p1 = $stmt->fetch();
+                if ($p1) $player1_name = $p1['username'];
+            }
+            
+            if ($joc['player2_id']) {
+                $stmt = $db->prepare('SELECT username FROM users WHERE user_id = ?');
+                $stmt->execute([$joc['player2_id']]);
+                $p2 = $stmt->fetch();
+                if ($p2) $player2_name = $p2['username'];
+            }
 
             echo json_encode([
-                'player1' => $joc['player1'],
-                'player2' => $joc['player2'],
+                'player1' => $joc['player1_id'],
+                'player2' => $joc['player2_id'],
+                'player1_name' => $player1_name,
+                'player2_name' => $player2_name,
                 'player1_x' => isset($joc['player1_x']) ? floatval($joc['player1_x']) : 50,
                 'player1_y' => isset($joc['player1_y']) ? floatval($joc['player1_y']) : 550,
                 'player2_x' => isset($joc['player2_x']) ? floatval($joc['player2_x']) : 350,
@@ -163,7 +213,7 @@ switch ($accio) {
                     isset($joc['player1_score']) ? $joc['player1_score'] : 0,
                     isset($joc['player2_score']) ? $joc['player2_score'] : 0
                 ],
-                'winner' => $joc['winner'],
+                'winner' => $joc['winner_id'],
                 'platforms' => $plataformas,
                 'point_platform' => $point_platform
             ]);
@@ -172,33 +222,25 @@ switch ($accio) {
 
     case 'update':
         $game_id = $_GET['game_id'];
-        $player_id = $_SESSION['player_id'];
         $player_x = floatval($_GET['x']);
         $player_y = floatval($_GET['y']);
 
-        $stmt = $db->prepare('SELECT * FROM games WHERE game_id = :game_id');
-        $stmt->bindValue(':game_id', $game_id);
-        $stmt->execute();
+        $stmt = $db->prepare('SELECT * FROM games WHERE game_id = ?');
+        $stmt->execute([$game_id]);
         $joc = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$joc || $joc['winner']) {
+        if (!$joc || $joc['winner_id']) {
             echo json_encode(['error' => 'Joc finalitzat o no trobat']);
             break;
         }
 
         // Determinar qué jugador hizo el update
-        if ($joc['player1'] === $player_id) {
-            $stmt = $db->prepare('UPDATE games SET player1_x = :x, player1_y = :y WHERE game_id = :game_id');
-            $stmt->bindValue(':x', $player_x);
-            $stmt->bindValue(':y', $player_y);
-            $stmt->bindValue(':game_id', $game_id);
-            $stmt->execute();
-        } elseif ($joc['player2'] === $player_id) {
-            $stmt = $db->prepare('UPDATE games SET player2_x = :x, player2_y = :y WHERE game_id = :game_id');
-            $stmt->bindValue(':x', $player_x);
-            $stmt->bindValue(':y', $player_y);
-            $stmt->bindValue(':game_id', $game_id);
-            $stmt->execute();
+        if ($joc['player1_id'] === $player_id) {
+            $stmt = $db->prepare('UPDATE games SET player1_x = ?, player1_y = ? WHERE game_id = ?');
+            $stmt->execute([$player_x, $player_y, $game_id]);
+        } elseif ($joc['player2_id'] === $player_id) {
+            $stmt = $db->prepare('UPDATE games SET player2_x = ?, player2_y = ? WHERE game_id = ?');
+            $stmt->execute([$player_x, $player_y, $game_id]);
         }
 
         echo json_encode(['success' => true]);
@@ -206,18 +248,16 @@ switch ($accio) {
 
     case 'collect':
         $game_id = $_GET['game_id'];
-        $player_id = $_SESSION['player_id'];
 
-        // Iniciar transacción para evitar race conditions
+        // Iniciar transacción
         $db->beginTransaction();
 
         try {
-            $stmt = $db->prepare('SELECT * FROM games WHERE game_id = :game_id');
-            $stmt->bindValue(':game_id', $game_id);
-            $stmt->execute();
+            $stmt = $db->prepare('SELECT * FROM games WHERE game_id = ?');
+            $stmt->execute([$game_id]);
             $joc = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if (!$joc || $joc['winner']) {
+            if (!$joc || $joc['winner_id']) {
                 $db->rollBack();
                 echo json_encode(['error' => 'Joc finalitzat o no trobat']);
                 break;
@@ -233,50 +273,36 @@ switch ($accio) {
 
             // Desactivar la plataforma INMEDIATAMENTE
             $point_platform['active'] = false;
-            $stmt = $db->prepare('UPDATE games SET point_platform = :point_platform WHERE game_id = :game_id');
-            $stmt->bindValue(':point_platform', json_encode($point_platform));
-            $stmt->bindValue(':game_id', $game_id);
-            $stmt->execute();
+            $stmt = $db->prepare('UPDATE games SET point_platform = ? WHERE game_id = ?');
+            $stmt->execute([json_encode($point_platform), $game_id]);
 
             // Determinar qué jugador recogió la plataforma
             $puntos_ganados = $point_platform['points'];
             
-            if ($joc['player1'] === $player_id) {
+            if ($joc['player1_id'] === $player_id) {
                 $nuevo_score = $joc['player1_score'] + $puntos_ganados;
-                $stmt = $db->prepare('UPDATE games SET player1_score = :score WHERE game_id = :game_id');
-                $stmt->bindValue(':score', $nuevo_score);
-                $stmt->bindValue(':game_id', $game_id);
-                $stmt->execute();
+                $stmt = $db->prepare('UPDATE games SET player1_score = ? WHERE game_id = ?');
+                $stmt->execute([$nuevo_score, $game_id]);
                 
-                // Comprobar si hay un ganador
+                // Comprobar ganador
                 if ($nuevo_score >= 100) {
-                    $stmt = $db->prepare('UPDATE games SET winner = :player_id WHERE game_id = :game_id');
-                    $stmt->bindValue(':player_id', $player_id);
-                    $stmt->bindValue(':game_id', $game_id);
-                    $stmt->execute();
+                    finalizarPartida($db, $game_id, $player_id, $joc['player1_id'], $joc['player2_id'], $nuevo_score, $joc['player2_score']);
                 }
-            } elseif ($joc['player2'] === $player_id) {
+            } elseif ($joc['player2_id'] === $player_id) {
                 $nuevo_score = $joc['player2_score'] + $puntos_ganados;
-                $stmt = $db->prepare('UPDATE games SET player2_score = :score WHERE game_id = :game_id');
-                $stmt->bindValue(':score', $nuevo_score);
-                $stmt->bindValue(':game_id', $game_id);
-                $stmt->execute();
+                $stmt = $db->prepare('UPDATE games SET player2_score = ? WHERE game_id = ?');
+                $stmt->execute([$nuevo_score, $game_id]);
                 
-                // Comprobar si hay un ganador
+                // Comprobar ganador
                 if ($nuevo_score >= 100) {
-                    $stmt = $db->prepare('UPDATE games SET winner = :player_id WHERE game_id = :game_id');
-                    $stmt->bindValue(':player_id', $player_id);
-                    $stmt->bindValue(':game_id', $game_id);
-                    $stmt->execute();
+                    finalizarPartida($db, $game_id, $player_id, $joc['player1_id'], $joc['player2_id'], $joc['player1_score'], $nuevo_score);
                 }
             }
 
             // Generar nueva plataforma de puntos
             $nueva_plataforma = generarPlataformaPuntos();
-            $stmt = $db->prepare('UPDATE games SET point_platform = :point_platform WHERE game_id = :game_id');
-            $stmt->bindValue(':point_platform', json_encode($nueva_plataforma));
-            $stmt->bindValue(':game_id', $game_id);
-            $stmt->execute();
+            $stmt = $db->prepare('UPDATE games SET point_platform = ? WHERE game_id = ?');
+            $stmt->execute([json_encode($nueva_plataforma), $game_id]);
 
             $db->commit();
             echo json_encode(['success' => true, 'points' => $puntos_ganados]);
