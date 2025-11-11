@@ -139,28 +139,61 @@ function finalizarPartida($db, $gameId, $winnerId, $player1Id, $player2Id, $scor
 switch ($accio) {
     case 'join':
         $game_id = null;
+        
+        // Obtener datos del POST (puede incluir room_code)
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $room_code = isset($input['room_code']) ? strtoupper(trim($input['room_code'])) : null;
 
-        // Intentar unirse a un juego existente donde player2 sea null
-        $stmt = $db->prepare('SELECT game_id FROM games WHERE player2_id IS NULL AND winner_id IS NULL LIMIT 1');
-        $stmt->execute();
-        $joc_existent = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($joc_existent) {
-            // Unirse al juego existente como player2
-            $game_id = $joc_existent['game_id'];
-            $stmt = $db->prepare('UPDATE games SET player2_id = ? WHERE game_id = ?');
-            $stmt->execute([$player_id, $game_id]);
-        } else {
-            // Crear un nuevo juego como player1
-            $game_id = uniqid();
-            $platforms_estaticas = generarPlataformasEstaticas();
-            $platform_puntos = json_encode(generarPlataformaPuntos());
+        if ($room_code) {
+            // MODO LOCAL: Buscar o crear sala con código
+            $stmt = $db->prepare('SELECT game_id, player1_id, player2_id FROM games WHERE game_id = ? AND winner_id IS NULL');
+            $stmt->execute([$room_code]);
+            $joc_existent = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            $stmt = $db->prepare('INSERT INTO games (game_id, player1_id, platforms, point_platform, player1_x, player1_y, player2_x, player2_y, player1_score, player2_score) VALUES (?, ?, ?, ?, 50, 550, 350, 550, 0, 0)');
-            $stmt->execute([$game_id, $player_id, $platforms_estaticas, $platform_puntos]);
+            if ($joc_existent) {
+                // La sala existe, unirse como player2
+                if ($joc_existent['player2_id']) {
+                    // Sala llena
+                    echo json_encode(['error' => 'Sala plena']);
+                    break;
+                }
+                
+                $game_id = $joc_existent['game_id'];
+                $stmt = $db->prepare('UPDATE games SET player2_id = ? WHERE game_id = ?');
+                $stmt->execute([$player_id, $game_id]);
+            } else {
+                // Crear nueva sala con el código como game_id
+                $game_id = $room_code;
+                $platforms_estaticas = generarPlataformasEstaticas();
+                $platform_puntos = json_encode(generarPlataformaPuntos());
+                
+                $stmt = $db->prepare('INSERT INTO games (game_id, player1_id, platforms, point_platform, player1_x, player1_y, player2_x, player2_y, player1_score, player2_score) VALUES (?, ?, ?, ?, 50, 550, 350, 550, 0, 0)');
+                $stmt->execute([$game_id, $player_id, $platforms_estaticas, $platform_puntos]);
+            }
+        } else {
+            // MODO ONLINE: Matchmaking automático
+            // Intentar unirse a un juego existente donde player2 sea null y NO tenga room code
+            $stmt = $db->prepare('SELECT game_id FROM games WHERE player2_id IS NULL AND winner_id IS NULL AND LENGTH(game_id) > 10 LIMIT 1');
+            $stmt->execute();
+            $joc_existent = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($joc_existent) {
+                // Unirse al juego existente como player2
+                $game_id = $joc_existent['game_id'];
+                $stmt = $db->prepare('UPDATE games SET player2_id = ? WHERE game_id = ?');
+                $stmt->execute([$player_id, $game_id]);
+            } else {
+                // Crear un nuevo juego como player1
+                $game_id = uniqid() . uniqid(); // ID largo para diferenciar de códigos de sala
+                $platforms_estaticas = generarPlataformasEstaticas();
+                $platform_puntos = json_encode(generarPlataformaPuntos());
+                
+                $stmt = $db->prepare('INSERT INTO games (game_id, player1_id, platforms, point_platform, player1_x, player1_y, player2_x, player2_y, player1_score, player2_score) VALUES (?, ?, ?, ?, 50, 550, 350, 550, 0, 0)');
+                $stmt->execute([$game_id, $player_id, $platforms_estaticas, $platform_puntos]);
+            }
         }
 
-        echo json_encode(['game_id' => $game_id, 'player_id' => $player_id]);
+        echo json_encode(['game_id' => $game_id, 'player_id' => $player_id, 'room_code' => $room_code]);
         break;
 
     case 'status':
