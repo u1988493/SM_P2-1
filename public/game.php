@@ -1,6 +1,7 @@
 <?php
 session_start();
 
+// Connectar a la base de dades SQLite
 require __DIR__ . '/db.php';
 $db = getDb();
 
