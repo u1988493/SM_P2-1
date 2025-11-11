@@ -1,56 +1,68 @@
 <?php
 function getDb(): PDO {
-    // Carpeta persistente en Azure App Service Linux
+    // En Azure App Service, usar /home que es persistente
     $home = getenv('HOME') ?: '/home';
-    $dataDir = $home . '/site/data';
-
-    // Crear /site/data si no existe
-    if (!is_dir($dataDir)) {
-        @mkdir($dataDir, 0777, true);
-    }
     
-    // Si no se puede crear o escribir en /site/data, usar /home/LogFiles
-    if (!is_dir($dataDir) || !is_writable($dataDir)) {
-        $dataDir = $home . '/LogFiles';
-        if (!is_dir($dataDir)) { 
-            @mkdir($dataDir, 0777, true); 
-        }
-    }
-
-    $dbPath = $dataDir . '/games.db';
-
-    // Si existe una BD semilla en /private, copiarla solo la primera vez
-    $seedPaths = [
-        __DIR__ . '/private/games.db',
-        __DIR__ . '/private/game.db'
+    // Intentar diferentes ubicaciones
+    $possibleDirs = [
+        $home . '/data',
+        $home . '/site/data',
+        '/tmp'  // No persistente pero funcional
     ];
     
-    foreach ($seedPaths as $seed) {
-        if (!file_exists($dbPath) && file_exists($seed)) {
-            @copy($seed, $dbPath);
-            @chmod($dbPath, 0666);
+    $dataDir = null;
+    foreach ($possibleDirs as $dir) {
+        if (!is_dir($dir)) @mkdir($dir, 0777, true);
+        if (is_dir($dir) && is_writable($dir)) {
+            $dataDir = $dir;
             break;
         }
     }
+    
+    if (!$dataDir) {
+        throw new Exception("No writable directory found");
+    }
 
-    // Crear archivo vacío si no existe
+    $dbPath = $dataDir . '/games.db';
+    error_log("DB Path: $dbPath");
+
+    // Copiar semilla si existe
+    if (!file_exists($dbPath)) {
+        foreach ([__DIR__ . '/private/games.db', __DIR__ . '/private/game.db'] as $seed) {
+            if (file_exists($seed)) {
+                @copy($seed, $dbPath);
+                @chmod($dbPath, 0666);
+                break;
+            }
+        }
+    }
+
+    // Crear archivo vacío
     if (!file_exists($dbPath)) {
         @file_put_contents($dbPath, '');
         @chmod($dbPath, 0666);
     }
+    
+    if (!file_exists($dbPath)) {
+        throw new Exception("Cannot create DB file at $dbPath");
+    }
 
-    // Conectar con PDO (modo excepciones)
+    // Conectar
     try {
         $pdo = new PDO('sqlite:' . $dbPath, null, null, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_TIMEOUT => 30
         ]);
+        
+        $pdo->exec("PRAGMA journal_mode = WAL");
+        $pdo->exec("PRAGMA synchronous = NORMAL");
+        
     } catch (PDOException $e) {
-        throw new Exception("No se pudo conectar a la base de datos en $dbPath: " . $e->getMessage());
+        throw new Exception("SQLite connection error: " . $e->getMessage());
     }
 
-    // Crear tabla si no existe
+    // Crear tabla
     try {
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS games (
@@ -67,10 +79,10 @@ function getDb(): PDO {
                 player2_score INTEGER DEFAULT 0,
                 winner TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            );
+            )
         ");
     } catch (PDOException $e) {
-        throw new Exception("No se pudo crear la tabla: " . $e->getMessage());
+        throw new Exception("Table creation error: " . $e->getMessage());
     }
 
     return $pdo;
