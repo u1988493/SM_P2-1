@@ -1,0 +1,10 @@
+DirectoryIndex index.html
+
+RewriteEngine On
+# No reescribir estos ficheros: deben servirse tal cual
+RewriteRule ^(game\.php|db\.php|favicon\.png)$ - [L]
+
+# Si piden algo que no existe, devolver index.html (SPA)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^.*$ index.html [L]
