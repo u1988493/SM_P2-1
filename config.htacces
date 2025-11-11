@@ -1,10 +1,19 @@
-DirectoryIndex index.html
-
 RewriteEngine On
-# No reescribir estos ficheros: deben servirse tal cual
-RewriteRule ^(game\.php|db\.php|favicon\.png)$ - [L]
+RewriteBase /
 
-# Si piden algo que no existe, devolver index.html (SPA)
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^.*$ index.html [L]
+# Si el archivo existe, servilo directamente
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Si es un directorio, servilo directamente
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Para Azure, asegurarse de que PHP maneje los archivos .php
+<FilesMatch "\.php$">
+    SetHandler application/x-httpd-php
+</FilesMatch>
+
+# Habilitar CORS si es necesario
+Header add Access-Control-Allow-Origin "*"
+Header add Access-Control-Allow-Methods "GET, POST, OPTIONS"
