@@ -6,7 +6,7 @@
   <link rel="icon" href="favicon.png" />
   <style>
     body { margin:0; padding:20px; font-family: Arial, sans-serif; background:#87CEEB; display:flex; flex-direction:column; align-items:center; }
-    #estat { color:#333; margin-bottom:10px; }
+    #estat { color:#333; margin-bottom:10px; font-weight:700; }
     #joc { display:none; }
     #puntuacio { background:#fff; padding:10px; border-radius:5px; margin-bottom:10px; font-size:18px; font-weight:bold; }
     #canvas { background:linear-gradient(to bottom,#87CEEB 0%,#B0E0E6 100%); border:3px solid #333; display:block; box-shadow:0 4px 8px rgba(0,0,0,.3); }
@@ -17,13 +17,13 @@
 </head>
 <body>
   <h1 id="estat">Connectant al joc...</h1>
+
   <div id="joc">
     <h2 id="puntuacio">Jugador 1: 0 | Jugador 2: 0</h2>
     <div id="ping">Ping: -- ms</div>
     <canvas id="canvas" width="400" height="600"></canvas>
     <div class="controls">
-      <strong>Controls:</strong> Fletxes esquerra/dreta per moure's, Espai per saltar<br />
-      <strong>Objectiu:</strong> Arribar a les plataformes daurades abans que el teu oponent! Primer a 100 punts guanya!
+      <strong>Controls:</strong> Fletxes esquerra/dreta per moure's, Espai/↑ per saltar. Primer a 100 punts guanya!
     </div>
   </div>
 
@@ -37,9 +37,7 @@
 
     let idJoc, idJugador, esPrimerJugador = false, guanyador = null;
 
-    // jugador local
     let jugador = { x:50, y:550, width:30, height:30, velocityY:0, velocityX:0, gravity:0.6, jumpPower:-15, moveSpeed:6, score:0, color:'#FF6B6B', onGround:false };
-    // oponent
     let oponent = { x:350, y:550, score:0, color:'#4ECDC4' };
 
     let plataformasEstaticas = [];
@@ -47,7 +45,7 @@
     let teclesPremes = {};
     let lastJumpTime = 0;
 
-    // Ping
+    // Ping suau (mitjana)
     let pingMs = 0, pingHistory = [];
     const maxPingHistory = 10;
     function actualizarPing(lat) {
@@ -59,17 +57,13 @@
       textPing.classList.add(pingMs<50?'ping-good': pingMs<100?'ping-medium':'ping-bad');
     }
 
-    // Helpers fetch JSON robusto (evita parsear HTML de error)
+    // Helper: fetch + valida JSON (si viene HTML/404 no peta el parseo)
     async function fetchJSON(url, options={}) {
       const res = await fetch(url, options);
       const text = await res.text();
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status} - ${text.slice(0,200)}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status} - ${text.slice(0,200)}`);
       try { return JSON.parse(text); }
-      catch {
-        throw new Error(`Resposta no JSON (possiblement 404/HTML): ${text.slice(0,200)}`);
-      }
+      catch { throw new Error(`Resposta no JSON: ${text.slice(0,200)}`); }
     }
 
     document.addEventListener('keydown', (e) => {
@@ -87,22 +81,27 @@
 
     async function unirseAlJoc() {
       try {
-        const data = await fetchJSON('./game.php?action=join');
+        // JOIN por POST (muchos backends lo requieren)
+        const data = await fetchJSON('./game.php?action=join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        });
+        if (data.error) throw new Error(data.error);
         idJoc = data.game_id;
         idJugador = data.player_id;
         comprovarEstatDelJoc();
       } catch (err) {
         console.error(err);
         textEstat.textContent = `No s'ha pogut connectar: ${err.message}`;
-        // Reintento suave
-        setTimeout(unirseAlJoc, 1000);
+        setTimeout(unirseAlJoc, 1200);
       }
     }
 
     async function comprovarEstatDelJoc() {
       const t0 = performance.now();
       try {
-        const joc = await fetchJSON(`./game.php?action=status&game_id=${encodeURIComponent(idJoc)}`);
+        const joc = await fetchJSON(`./game.php?action=status&game_id=${encodeURIComponent(idJoc)}&player_id=${encodeURIComponent(idJugador)}`);
         const t1 = performance.now();
         actualizarPing(t1 - t0);
 
@@ -126,12 +125,12 @@
         textPuntuacio.textContent = `Jugador 1: ${joc.points?.[0] ?? 0} | Jugador 2: ${joc.points?.[1] ?? 0}`;
 
         if (guanyador) {
-          textEstat.textContent = (guanyador === idJugador) ? '🎉 Has guanyat! 🎉' : '😢 Has perdut!';
+          textEstat.textContent = (guanyador === idJugador) ? '🎉 Has guanyat!' : '😢 Has perdut!';
           return;
         }
 
         if (joc.player1 && joc.player2) {
-          textEstat.textContent = 'Carrera en curs! Primer a 100 punts guanya!';
+          textEstat.textContent = 'Carrera en curs!';
           divJoc.style.display = 'block';
           if (!gameLoopStarted) { gameLoopStarted = true; gameLoop(); }
         } else if (esPrimerJugador) {
@@ -144,7 +143,7 @@
       } catch (err) {
         console.error(err);
         textEstat.textContent = `Error d'estat: ${err.message}`;
-        setTimeout(comprovarEstatDelJoc, 500);
+        setTimeout(comprovarEstatDelJoc, 600);
       }
     }
 
@@ -161,7 +160,6 @@
     }
 
     function update(deltaTime) {
-      // moviment horitzontal
       if (teclesPremes['ArrowLeft'] || teclesPremes['a'] || teclesPremes['A']) jugador.velocityX = -jugador.moveSpeed;
       else if (teclesPremes['ArrowRight'] || teclesPremes['d'] || teclesPremes['D']) jugador.velocityX = jugador.moveSpeed;
       else jugador.velocityX = 0;
@@ -174,13 +172,11 @@
       jugador.y += jugador.velocityY * deltaTime;
       jugador.onGround = false;
 
-      // terra
       if (jugador.y + jugador.height >= canvas.height - 10) {
         jugador.y = canvas.height - 10 - jugador.height;
         jugador.velocityY = 0; jugador.onGround = true;
       }
 
-      // plataformes
       if (jugador.velocityY > 0) {
         for (let plat of plataformasEstaticas) {
           if (jugador.y + jugador.height >= plat.y &&
@@ -192,7 +188,6 @@
           }
         }
 
-        // plataforma de punts
         if (plataformaPuntos && plataformaPuntos.active) {
           if (jugador.y + jugador.height >= plataformaPuntos.y &&
               jugador.y + jugador.height <= plataformaPuntos.y + 15 &&
@@ -203,7 +198,7 @@
 
             if (plataformaPuntos.active) {
               plataformaPuntos.active = false;
-              fetchJSON(`./game.php?action=collect&game_id=${encodeURIComponent(idJoc)}`)
+              fetchJSON(`./game.php?action=collect&game_id=${encodeURIComponent(idJoc)}&player_id=${encodeURIComponent(idJugador)}`)
                 .then(d => { if (d.success) jugador.score += d.points || 0; })
                 .catch(console.error);
             }
@@ -211,11 +206,10 @@
         }
       }
 
-      // enviar posició cada 100 ms
       const t = Date.now();
       if (t - lastServerUpdate > 100) {
         lastServerUpdate = t;
-        fetch(`./game.php?action=update&game_id=${encodeURIComponent(idJoc)}&x=${jugador.x}&y=${jugador.y}`)
+        fetch(`./game.php?action=update&game_id=${encodeURIComponent(idJoc)}&player_id=${encodeURIComponent(idJugador)}&x=${jugador.x}&y=${jugador.y}`)
           .catch(console.error);
       }
     }
@@ -225,13 +219,11 @@
       ctx.fillStyle = '#654321'; ctx.fillRect(0, canvas.height-10, canvas.width, 10);
       ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(0, canvas.height-10, canvas.width, 10);
 
-      // plataformes
       plataformasEstaticas.forEach(plat => {
         ctx.fillStyle = '#8B4513'; ctx.fillRect(plat.x, plat.y, plat.width, 10);
         ctx.strokeStyle = '#654321'; ctx.lineWidth = 2; ctx.strokeRect(plat.x, plat.y, plat.width, 10);
       });
 
-      // plataforma punts
       if (plataformaPuntos && plataformaPuntos.active) {
         ctx.shadowColor = 'rgba(255, 215, 0, 0.5)'; ctx.shadowBlur = 10;
         ctx.fillStyle = '#FFD700'; ctx.fillRect(plataformaPuntos.x, plataformaPuntos.y, plataformaPuntos.width, 10);
@@ -242,22 +234,16 @@
         ctx.fillText(`+${plataformaPuntos.points}`, plataformaPuntos.x + plataformaPuntos.width/2, plataformaPuntos.y - 5);
       }
 
-      // oponent
       ctx.fillStyle = oponent.color; ctx.fillRect(oponent.x, oponent.y, jugador.width, jugador.height);
       ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(oponent.x, oponent.y, jugador.width, jugador.height);
-      ctx.fillStyle = '#000'; ctx.fillRect(oponent.x+8, oponent.y+10, 4,4); ctx.fillRect(oponent.x+18, oponent.y+10, 4,4);
 
-      // jugador
       ctx.fillStyle = jugador.color; ctx.fillRect(jugador.x, jugador.y, jugador.width, jugador.height);
       ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(jugador.x, jugador.y, jugador.width, jugador.height);
-      ctx.fillStyle = '#000'; ctx.fillRect(jugador.x+8, jugador.y+10, 4,4); ctx.fillRect(jugador.x+18, jugador.y+10, 4,4);
 
-      // puntuació local
       ctx.fillStyle = '#000'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'left';
       ctx.fillText(`Punts: ${jugador.score}`, 10, 30);
     }
 
-    // arrencar
     unirseAlJoc();
   </script>
 </body>
