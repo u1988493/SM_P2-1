@@ -97,6 +97,13 @@ function backToMainMenu() {
 
 // ===== MODO ONLINE =====
 function startOnlineGame() {
+  // Verificar autenticación
+  if (!isAuthenticated) {
+    alert("Has d'iniciar sessió per poder jugar.");
+    window.location.href = '/.auth/login/aad?post_login_redirect_uri=/index.html';
+    return;
+  }
+  
   currentGameMode = 'online';
   currentRoomCode = null;
   document.getElementById('gameRoomInfo').textContent = 'Mode Online';
@@ -106,10 +113,11 @@ function startOnlineGame() {
   unirseAlJoc();
 }
 
-// ===== MODO LOCAL (cÃ³digo de sala) =====
+// ===== MODO LOCAL (código de sala) =====
 function showLocalModal() {
+  // Verificar autenticación
   if (!isAuthenticated) {
-    alert('Debes iniciar sesión para jugar.');
+    alert("Has d'iniciar sessió per poder jugar.");
     window.location.href = '/.auth/login/aad?post_login_redirect_uri=/index.html';
     return;
   }
