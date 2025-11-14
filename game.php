@@ -36,9 +36,14 @@ if ($authInfo['isAuthenticated']) {
     // Crear o actualizar usuario
     $user = getOrCreateUser($db, $player_id, $authInfo['userName'], $authInfo['userEmail']);
 } else {
-    // Fallback: generar un nuevo ID único para CADA conexión (no basado en sesión)
-    // Esto permite que múltiples jugadores desde el mismo navegador tengan IDs diferentes
-    $player_id = 'guest_' . uniqid() . '_' . mt_rand(10000, 99999);
+    // Fallback: usar cookie para mantener ID consistente entre requests
+    if (!isset($_COOKIE['guest_player_id'])) {
+        $player_id = 'guest_' . uniqid() . '_' . mt_rand(10000, 99999);
+        setcookie('guest_player_id', $player_id, time() + 3600 * 24, '/'); // 24 horas
+        $_COOKIE['guest_player_id'] = $player_id;
+    } else {
+        $player_id = $_COOKIE['guest_player_id'];
+    }
 }
 
 $accio = isset($_GET['action']) ? $_GET['action'] : '';
@@ -344,6 +349,6 @@ switch ($accio) {
         break;
         
     default:
-        echo json_encode(['error' => 'AcciÃ³ no reconeguda']);
+        echo json_encode(['error' => 'Acció no reconeguda']);
         break;
 }

@@ -8,9 +8,9 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="refresh" content="0;url=/index.html">
-  <title>Redirigiendo...</title>
+  <title>Redirigint...</title>
 </head>
 <body>
-  Redirigiendo a inicio...
+  Redirigint al inici...
 </body>
 </html>
