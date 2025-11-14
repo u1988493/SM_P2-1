@@ -1,13 +1,13 @@
 <?php
 function getDb(): PDO {
-    // En Azure App Service, usar /home que es persistente
+    // A Azure App Service, usar /home que és persistent
     $home = getenv('HOME') ?: '/home';
     
-    // Intentar diferentes ubicaciones
+    // Intentar diferents ubicacions
     $possibleDirs = [
         $home . '/data',
         $home . '/site/data',
-        '/tmp'  // No persistente pero funcional
+        '/tmp'  // No persistent però funcional
     ];
     
     $dataDir = null;
@@ -20,13 +20,13 @@ function getDb(): PDO {
     }
     
     if (!$dataDir) {
-        throw new Exception("No writable directory found");
+        throw new Exception("Cap directori escribible trobat");
     }
 
     $dbPath = $dataDir . '/games.db';
-    error_log("DB Path: $dbPath");
+    error_log("Ruta BD: $dbPath");
 
-    // Copiar semilla si existe
+    // Copiar llavor si existeix
     if (!file_exists($dbPath)) {
         foreach ([__DIR__ . '/private/games.db', __DIR__ . '/private/game.db'] as $seed) {
             if (file_exists($seed)) {
@@ -37,17 +37,17 @@ function getDb(): PDO {
         }
     }
 
-    // Crear archivo vacío
+    // Crear arxiu buit
     if (!file_exists($dbPath)) {
         @file_put_contents($dbPath, '');
         @chmod($dbPath, 0666);
     }
     
     if (!file_exists($dbPath)) {
-        throw new Exception("Cannot create DB file at $dbPath");
+        throw new Exception("No es pot crear el fitxer BD a $dbPath");
     }
 
-    // Conectar
+    // Connectar
     try {
         $pdo = new PDO('sqlite:' . $dbPath, null, null, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -59,12 +59,12 @@ function getDb(): PDO {
         $pdo->exec("PRAGMA synchronous = NORMAL");
         
     } catch (PDOException $e) {
-        throw new Exception("SQLite connection error: " . $e->getMessage());
+        throw new Exception("Error de connexió SQLite: " . $e->getMessage());
     }
 
-    // Crear tablas
+    // Crear taules
     try {
-        // Tabla de usuarios
+        // Taula d'usuaris
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS users (
                 user_id TEXT PRIMARY KEY,
@@ -78,7 +78,7 @@ function getDb(): PDO {
             )
         ");
         
-        // Tabla de juegos
+        // Taula de jocs
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS games (
                 game_id TEXT PRIMARY KEY,
@@ -101,7 +101,7 @@ function getDb(): PDO {
             )
         ");
         
-        // Tabla de historial
+        // Taula d'historial
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS game_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -116,20 +116,20 @@ function getDb(): PDO {
         ");
         
     } catch (PDOException $e) {
-        throw new Exception("Table creation error: " . $e->getMessage());
+        throw new Exception("Error crear taules: " . $e->getMessage());
     }
 
     return $pdo;
 }
 
-// Función para obtener o crear usuario desde Azure AD
+// Funció per agafar o crear usuari des d'Azure AD
 function getOrCreateUser($pdo, $userId, $userName, $userEmail) {
     $stmt = $pdo->prepare('SELECT * FROM users WHERE user_id = ?');
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
     
     if (!$user) {
-        // Crear nuevo usuario
+        // Crear nou usuari
         $stmt = $pdo->prepare('INSERT INTO users (user_id, username, email) VALUES (?, ?, ?)');
         $stmt->execute([$userId, $userName, $userEmail]);
         
@@ -137,7 +137,7 @@ function getOrCreateUser($pdo, $userId, $userName, $userEmail) {
         $stmt->execute([$userId]);
         $user = $stmt->fetch();
     } else {
-        // Actualizar última conexión
+        // Actualitzar última connexió
         $stmt = $pdo->prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE user_id = ?');
         $stmt->execute([$userId]);
     }
@@ -145,14 +145,14 @@ function getOrCreateUser($pdo, $userId, $userName, $userEmail) {
     return $user;
 }
 
-// Función para obtener información de autenticación de Azure
+// Funció per agafar info d'autenticació d'Azure
 function getAzureAuthInfo() {
     $userId = $_SERVER['HTTP_X_MS_CLIENT_PRINCIPAL_ID'] ?? 
               $_SERVER['X_MS_CLIENT_PRINCIPAL_ID'] ?? null;
     
     $userName = $_SERVER['HTTP_X_MS_CLIENT_PRINCIPAL_NAME'] ?? 
                 $_SERVER['X_MS_CLIENT_PRINCIPAL_NAME'] ?? 
-                'Usuario';
+                'Usuari';
     
     $userEmail = $_SERVER['HTTP_X_MS_CLIENT_PRINCIPAL_EMAIL'] ?? 
                  $_SERVER['X_MS_CLIENT_PRINCIPAL_EMAIL'] ?? null;

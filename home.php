@@ -1,8 +1,7 @@
 <?php
-// home.php - Punto de entrada principal que permite invitados
-// Este archivo NO requiere autenticación de Azure, permitiendo que vean el menú principal
+// home.php - Punt d'entrada principal que permet convidats
 
-// Simplemente servir index.html
+// Simplement servir index.html
 ?><!DOCTYPE html>
 <html lang="ca">
 <head>

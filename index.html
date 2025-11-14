@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carrera de Plataformes</title>
     <style>
+        /* ===== RESET I CONFIGURACIÓ GLOBAL ===== */
         * {
             margin: 0;
             padding: 0;
@@ -20,7 +21,7 @@
             align-items: center;
         }
 
-        /* MENÚ PRINCIPAL */
+        /* ===== MENÚ PRINCIPAL ===== */
         #mainMenu {
             background: white;
             padding: 40px;
@@ -43,6 +44,7 @@
             font-size: 18px;
         }
 
+        /* ===== SECCIÓ DE JOCS ===== */
         .game-preview {
             background: #f5f5f5;
             padding: 20px;
@@ -61,6 +63,7 @@
             font-size: 15px;
         }
 
+        /* ===== SECCIÓ D'USUARI ===== */
         .user-section {
             display: flex;
             justify-content: space-between;
@@ -89,6 +92,7 @@
             font-weight: bold;
         }
 
+        /* ===== BOTONS ===== */
         .btn {
             padding: 15px 30px;
             border: none;
@@ -132,7 +136,7 @@
             transform: translateY(-2px);
         }
 
-        /* MENÚ DE MODOS */
+        /* ===== MENÚ DE MODES DE JOC ===== */
         #modeMenu {
             display: none;
             background: white;
@@ -181,7 +185,7 @@
             font-size: 14px;
         }
 
-        /* MODAL SALA LOCAL */
+        /* ===== MODAL SALA LOCAL ===== */
         #localModal {
             display: none;
             position: fixed;
@@ -209,6 +213,7 @@
             color: #333;
         }
 
+        /* ===== PESTANYES DEL MODAL ===== */
         .modal-tabs {
             display: flex;
             gap: 10px;
@@ -246,6 +251,7 @@
             display: block;
         }
 
+        /* ===== ELEMENTS DEL MODAL ===== */
         .input-group {
             margin: 20px 0;
         }
@@ -323,7 +329,7 @@
             font-size: 14px;
         }
 
-        /* JUEGO */
+        /* ===== CONTENEDOR DEL JOC ===== */
         #gameContainer {
             display: none;
             flex-direction: column;
@@ -344,6 +350,7 @@
             max-width: 600px;
         }
 
+        /* ===== CANVAS DEL JOC ===== */
         #canvas {
             background: linear-gradient(to bottom, #87CEEB 0%, #B0E0E6 100%);
             border: 3px solid #333;
@@ -361,6 +368,7 @@
             font-weight: bold;
         }
 
+        /* ===== INFORMACIÓ DE PING ===== */
         #ping {
             background-color: white;
             padding: 8px 12px;
@@ -392,7 +400,7 @@
             white-space: pre-wrap;
         }
 
-        /* RESULTADO */
+        /* ===== PANTALLA DE RESULTAT ===== */
         #resultScreen {
             display: none;
             background: white;
@@ -433,6 +441,7 @@
             border-bottom: none;
         }
 
+        /* ===== RESPONSIU ===== */
         @media (max-width: 600px) {
             .mode-grid {
                 grid-template-columns: 1fr;
@@ -446,18 +455,18 @@
     </style>
 </head>
 <body>
-    <!-- MENÚ PRINCIPAL -->
+    <!-- ===== MENÚ PRINCIPAL ===== -->
     <div id="mainMenu">
         <h1>🎮 Carrera de Plataformes</h1>
         <p class="subtitle">Joc multijugador en temps real</p>
 
-        <!-- Sección de usuario -->
+        <!-- ===== SECCIÓ D'USUARI ===== -->
         <div class="user-section">
             <div class="user-info-display">
                 <div class="user-avatar-small" id="menuUserAvatar">👤</div>
                 <div style="text-align: left;">
                     <div style="font-weight: bold; font-size: 14px;" id="menuUserName">Convidat</div>
-                    <div style="font-size: 12px; color: #666;" id="menuUserStatus">Mode invitat</div>
+                    <div style="font-size: 12px; color: #666;" id="menuUserStatus">Mode convidats</div>
                 </div>
             </div>
             <div>
@@ -466,18 +475,20 @@
             </div>
         </div>
 
+        <!-- ===== INFORMACIÓ DEL JOC ===== -->
         <div class="game-preview">
             <h3>Característiques:</h3>
             <ul class="features">
                 <li>🏃 Partides 1v1 en temps real</li>
                 <li>⭐ Recull plataformes daurades per guanyar punts</li>
                 <li>🏆 Primer a 100 punts guanya la partida</li>
-                <li>🌐 Mode Online: Juga amb qualsevol jugador</li>
+                <li>🌍 Mode Online: Juga amb qualsevol jugador</li>
                 <li>🔐 Mode Local: Crea una sala privada amb codi</li>
                 <li>📊 Estadístiques (usuaris registrats)</li>
             </ul>
         </div>
 
+        <!-- ===== BOTÓ JUGAR ===== -->
         <button class="btn btn-success" style="width: 100%; font-size: 20px; padding: 20px;" onclick="showModeMenu()">
             ▶️ JUGAR
         </button>
@@ -487,18 +498,20 @@
         </p>
     </div>
 
-    <!-- MENÚ DE SELECCIÓN DE MODO -->
+    <!-- ===== MENÚ DE SELECCIÓ DE MODE ===== -->
     <div id="modeMenu">
         <h2 style="margin-bottom: 10px;">Selecciona el Mode de Joc</h2>
         <p style="color: #666; margin-bottom: 30px;">Tria com vols jugar</p>
 
         <div class="mode-grid">
+            <!-- ===== MODE ONLINE ===== -->
             <div class="mode-card" onclick="startOnlineGame()">
-                <div class="mode-card-icon">🌐</div>
+                <div class="mode-card-icon">🌍</div>
                 <h3>Jugar Online</h3>
                 <p>Uneix-te a una partida amb un jugador aleatori</p>
             </div>
 
+            <!-- ===== MODE LOCAL ===== -->
             <div class="mode-card" onclick="showLocalModal()">
                 <div class="mode-card-icon">🔐</div>
                 <h3>Partida Local</h3>
@@ -509,17 +522,18 @@
         <button class="btn btn-secondary" onclick="backToMainMenu()">⬅️ Tornar</button>
     </div>
 
-    <!-- MODAL SALA LOCAL -->
+    <!-- ===== MODAL SALA LOCAL ===== -->
     <div id="localModal">
         <div class="modal-content">
             <h2>🔐 Partida Local</h2>
             
+            <!-- ===== PESTANYES ===== -->
             <div class="modal-tabs">
                 <button class="modal-tab active" onclick="switchTab('create')">📝 Crear Sala</button>
                 <button class="modal-tab" onclick="switchTab('join')">🔗 Unir-se</button>
             </div>
 
-            <!-- TAB: CREAR SALA -->
+            <!-- ===== PESTANYA: CREAR SALA ===== -->
             <div id="create-tab" class="tab-content active">
                 <p style="color: #666; margin-bottom: 20px;">Genera un codi per que altres es puguin unir:</p>
                 
@@ -527,7 +541,7 @@
                     ✨ Crear Sala Nova
                 </button>
 
-                <!-- Panel para mostrar código de sala creada -->
+                <!-- ===== PANEL SALA CREADA ===== -->
                 <div id="roomCreatedPanel" style="display: none; margin-top: 20px;">
                     <div class="waiting-message">
                         ⏳ Esperant que l'altre jugador s'uneixi...
@@ -540,7 +554,7 @@
                 </div>
             </div>
 
-            <!-- TAB: UNIR-SE -->
+            <!-- ===== PESTANYA: UNIR-SE ===== -->
             <div id="join-tab" class="tab-content">
                 <p style="color: #666; margin-bottom: 20px;">Introdueix el codi que t'ha donat l'altre jugador:</p>
                 
@@ -560,8 +574,9 @@
         </div>
     </div>
 
-    <!-- CONTENEDOR DEL JUEGO -->
+    <!-- ===== CONTENEDOR DEL JOC ===== -->
     <div id="gameContainer">
+        <!-- ===== CAPÇALERA DEL JOC ===== -->
         <div class="game-header">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <div class="user-avatar-small" id="gameUserAvatar">👤</div>
@@ -573,20 +588,27 @@
             <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="leaveGame()">Sortir</button>
         </div>
 
+        <!-- ===== INFORMACIÓ DE LA PARTIDA ===== -->
         <h2 id="estat">Connectant...</h2>
         <h3 id="puntuacio">Jugador 1: 0 | Jugador 2: 0</h3>
         <div id="ping">Ping: -- ms</div>
+
+        <!-- ===== CANVAS DEL JOC ===== -->
         <canvas id="canvas" width="400" height="600"></canvas>
+
+        <!-- ===== CONTROLS ===== -->
         <div class="controls">
             <strong>Controls:</strong> ⬅️ ➡️ per moure, Espai o ⬆️ per saltar<br>
             <strong>Objectiu:</strong> Primer a 100 punts guanya!
         </div>
     </div>
 
-    <!-- PANTALLA DE RESULTADO -->
+    <!-- ===== PANTALLA DE RESULTAT ===== -->
     <div id="resultScreen">
         <div class="result-icon" id="resultIcon">🎉</div>
         <div class="result-title" id="resultTitle">Has Guanyat!</div>
+        
+        <!-- ===== ESTADÍSTIQUES FINALS ===== -->
         <div class="result-stats" id="resultStats">
             <div class="stat-row">
                 <span>La teva puntuació:</span>
@@ -598,6 +620,7 @@
             </div>
         </div>
 
+        <!-- ===== BOTONS FINALS ===== -->
         <button class="btn btn-primary" id="viewProfileBtn" style="width: 100%; margin-bottom: 10px; display: none;" onclick="window.location.href='/perfil.php'">
             👤 Veure Perfil
         </button>
@@ -611,8 +634,9 @@
         </button>
     </div>
 
+    <!-- ===== SCRIPTS AUXILIARS ===== -->
     <script>
-        // Funciones auxiliares para el modal
+        // ===== FUNCIONS AUXILIARS PER AL MODAL =====
         function switchTab(tabName) {
             const tabs = document.querySelectorAll('.modal-tab');
             const contents = document.querySelectorAll('.tab-content');
@@ -624,6 +648,7 @@
             document.getElementById(tabName + '-tab').classList.add('active');
         }
 
+        // ===== COPIAR CODI DE SALA =====
         function copyRoomCode() {
             const code = document.getElementById('createdRoomCode').textContent;
             navigator.clipboard.writeText(code).then(() => {
@@ -634,6 +659,7 @@
         }
     </script>
 
+    <!-- ===== IMPORTAR LÒGICA DEL JOC ===== -->
     <script src="game.js"></script>
 </body>
 </html>

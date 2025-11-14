@@ -1,20 +1,20 @@
 <?php
 require_once __DIR__ . '/db.php';
 
-// Obtener información de autenticación
+// Agafar info d'autenticació
 $authInfo = getAzureAuthInfo();
 
 if (!$authInfo['isAuthenticated']) {
-    // Redirigir a login si no está autenticado
+    // Redirigir a login si no està autenticat
     header('Location: /.auth/login/aad?post_login_redirect_uri=/perfil.php');
     exit;
 }
 
-// Obtener datos del usuario
+// Agafar dades de l'usuari
 $db = getDb();
 $user = getOrCreateUser($db, $authInfo['userId'], $authInfo['userName'], $authInfo['userEmail']);
 
-// Obtener historial de partidas
+// Agafar historial de partides
 $stmt = $db->prepare('
     SELECT gh.*, g.player1_id, g.player2_id, g.winner_id, g.finished_at
     FROM game_history gh

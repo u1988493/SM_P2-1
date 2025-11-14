@@ -1,6 +1,6 @@
-// game.js - Versión mejorada con soporte correcto para multijugador local
 
-// ===== ESTADO GLOBAL =====
+
+// ===== ESTAT GLOBAL =====
 let isAuthenticated = false;
 let currentUserName = 'Convidat';
 let currentUserId = null;
@@ -12,8 +12,8 @@ let idJoc = null, idJugador = null;
 let esPrimerJugador = false;
 let guanyador = null;
 
-let gameLoopStarted = false;    // solo true con 2 jugadores
-let gameWasRunning = false;     // detecta si ya hubo 2 jugadores
+let gameLoopStarted = false;    // només true amb 2 jugadors
+let gameWasRunning = false;     // detecta si ja va haver 2 jugadors
 let lastUpdateTime = Date.now();
 let lastServerUpdate = 0;
 let statusPollTimer = null;
@@ -22,7 +22,7 @@ let gameRAF = null;             // id de requestAnimationFrame
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-// El canvas estará oculto mientras no haya rival
+// El canvas estarà ocult mentre no hagi rival
 canvas.style.visibility = 'hidden';
 
 let jugador = {
@@ -41,7 +41,7 @@ let lastJumpTime = 0;
 let pingMs = 0, pingHistory = [];
 const maxPingHistory = 10;
 
-// ===== AUTENTICACIÓN LIGERA =====
+// ===== AUTENTICACIÓ LLEUGERA =====
 async function checkAuthentication() {
   try {
     const r = await fetch('/auth-handler.php', { credentials: 'include' });
@@ -57,14 +57,14 @@ async function checkAuthentication() {
       }
     }
   } catch (_) {
-    console.error('Error checking authentication:', _);
+    console.error('Error verificant autenticació:', _);
   }
   updateUserDisplay(currentUserName, isAuthenticated);
 }
 
 function updateUserDisplay(userName, authenticated) {
   document.getElementById('menuUserName').textContent = userName;
-  document.getElementById('menuUserStatus').textContent = authenticated ? 'Usuari registrat' : 'Mode invitat';
+  document.getElementById('menuUserStatus').textContent = authenticated ? 'Usuari registrat' : 'Mode convidats';
   document.getElementById('menuUserAvatar').textContent = userName.charAt(0).toUpperCase();
 
   document.getElementById('menuLoginBtn').style.display = authenticated ? 'none' : 'inline-block';
@@ -74,7 +74,7 @@ function updateUserDisplay(userName, authenticated) {
   document.getElementById('gameUserAvatar').textContent = userName.charAt(0).toUpperCase();
 }
 
-// ===== NAVEGACIÓN =====
+// ===== NAVEGACIÓ =====
 function showScreen(screenId) {
   const screens = ['mainMenu', 'modeMenu', 'gameContainer', 'resultScreen'];
   screens.forEach(id => { document.getElementById(id).style.display = 'none'; });
@@ -82,7 +82,7 @@ function showScreen(screenId) {
 }
 
 function showModeMenu() {
-  // Verificar autenticación PRIMERO
+  // Verificar autenticació PRIMER
   if (!isAuthenticated) {
     alert("Has d'iniciar sessió per poder jugar.");
     window.location.href = '/.auth/login/aad?post_login_redirect_uri=/index.html';
@@ -100,7 +100,7 @@ function backToMainMenu() {
   resetGame(true);
 }
 
-// ===== MODO ONLINE =====
+// ===== MODE ONLINE =====
 function startOnlineGame() {
   currentGameMode = 'online';
   currentRoomCode = null;
@@ -111,7 +111,7 @@ function startOnlineGame() {
   unirseAlJoc();
 }
 
-// ===== MODO LOCAL (código de sala) =====
+// ===== MODE LOCAL (codi de sala) =====
 function showLocalModal() {
   document.getElementById('localModal').style.display = 'flex';
   document.getElementById('roomCodeInput').value = '';
@@ -192,7 +192,7 @@ async function joinRoom() {
     closeLocalModal();
     showScreen('gameContainer');
     canvas.style.visibility = 'hidden';
-    document.getElementById('estat').textContent = '⏳ Espenant al host...';
+    document.getElementById('estat').textContent = '⏳ Esperant al host...';
     
     comprovarEstatDelJoc();
   } catch (e) { 
@@ -213,14 +213,14 @@ async function comprovarSalaLocal() {
       return;
     }
 
-    // Comprobar que hay 2 jugadores DIFERENTES
+    // Comprobar que hi han 2 jugadors DIFERENTS
     if (joc.player1 && joc.player2 && joc.player1 !== joc.player2) {
-      // Dos jugadores diferentes - empezar partida
+      // Dos jugadors diferents - engegar partida
       document.getElementById('localModal').style.display = 'none';
       closeLocalModal();
       comprovarEstatDelJoc();
     } else {
-      // Mostrar que estamos esperando
+      // Mostrar que esteim esperant
       document.getElementById('estat').textContent = '⏳ Esperant que es connecti un oponent...\nCodi: ' + currentRoomCode;
       setTimeout(comprovarSalaLocal, 1500);
     }
@@ -230,7 +230,7 @@ async function comprovarSalaLocal() {
   }
 }
 
-// ===== CONEXIÓN / ESTADO DE PARTIDA =====
+// ===== CONNEXIÓ / ESTAT DE PARTIDA =====
 function unirseAlJoc() {
   const body = currentRoomCode ? JSON.stringify({ room_code: currentRoomCode }) : '{}';
 
@@ -245,7 +245,7 @@ function unirseAlJoc() {
     idJoc = data.game_id;
     idJugador = data.player_id;
 
-    // Actualizar nombre si el backend lo manda en status
+    // Actualitzar nom si el backend ho mana en status
     try {
       fetch(`/game.php?action=status&game_id=${data.game_id}`)
         .then(r => r.json())
@@ -295,7 +295,7 @@ function startGameLoop() {
 }
 
 function setStartPositions() {
-  // Coloca posiciones iniciales NUEVAS al arrancar partida
+  // Col·loca posicions inicials NOVES al arrancar partida
   jugador.x = esPrimerJugador ? 50 : 350;
   jugador.y = 550;
   jugador.velocityX = 0;
@@ -307,7 +307,7 @@ function setStartPositions() {
 }
 
 function resetTransientState() {
-  // Limpia inputs y tiempos para evitar "arrastre"
+  // Limpia inputs i temps per evitar "arrastres"
   teclesPremes = {};
   lastServerUpdate = 0;
   lastUpdateTime = Date.now();
@@ -327,7 +327,7 @@ function comprovarEstatDelJoc() {
       guanyador = joc.winner || null;
       esPrimerJugador = (joc.player1 === idJugador);
 
-      // Puntuaciones/posiciones
+      // Puntuacions/posicions
       if (esPrimerJugador) {
         jugador.color = '#FF6B6B'; oponent.color = '#4ECDC4';
         oponent.x = joc.player2_x ?? 350; oponent.y = joc.player2_y ?? 550;
@@ -342,10 +342,10 @@ function comprovarEstatDelJoc() {
       const p2Name = joc.player2_name || 'Jugador 2';
       document.getElementById('puntuacio').textContent = `${p1Name}: ${joc.points?.[0] || 0} | ${p2Name}: ${joc.points?.[1] || 0}`;
 
-      // Verificar que hay 2 jugadores DIFERENTES
+      // Verificar que hi ha 2 jugadors DIFERENTS
       const bothThere = Boolean(joc.player1 && joc.player2 && joc.player1 !== joc.player2);
 
-      // Si el rival se fue tras haber empezado: resultado + salida limpia
+      // Si el rival se'n va després d'haber engegat: resultat + sortida neta
       if (!guanyador && gameWasRunning && !bothThere) {
         try { fetch(`/game.php?action=leave&game_id=${idJoc}`, { method: 'POST' }); } catch {}
         showResultScreen(true, jugador.score, oponent.score, { reason: 'opponent_left' });
@@ -359,18 +359,18 @@ function comprovarEstatDelJoc() {
       }
 
       if (bothThere) {
-        // Mostrar canvas ahora
+        // Mostrar canvas ara
         canvas.style.visibility = 'visible';
-        document.getElementById('estat').textContent = '🏁 Carrera en curs!';
+        document.getElementById('estat').textContent = '🏃 Carrera en curs!';
         if (!gameWasRunning) {
-          // La partida REAL comienza ahora: posiciones limpias
+          // La partida REAL comença ara: posicions netes
           setStartPositions();
           resetTransientState();
         }
         gameWasRunning = true;
         startGameLoop();
       } else {
-        // Aún esperando: ocultar canvas y parar loop
+        // Encara esperant: ocultar canvas i parar loop
         if (joc.player1 && !joc.player2) {
           document.getElementById('estat').textContent = `⏳ Sou player 1\nEsperant player 2...`;
         } else if (!joc.player1 && joc.player2) {
@@ -392,7 +392,7 @@ function comprovarEstatDelJoc() {
     });
 }
 
-// ===== CONTROLES =====
+// ===== CONTROLS =====
 document.addEventListener('keydown', (e) => {
   teclesPremes[e.key] = true;
   if ((e.key === ' ' || e.key === 'ArrowUp') && jugador.onGround) {
@@ -419,7 +419,7 @@ function gameLoop() {
 }
 
 function update(deltaTime) {
-  // Movimiento
+  // Moviment
   if (teclesPremes['ArrowLeft'] || teclesPremes['a'] || teclesPremes['A']) jugador.velocityX = -jugador.moveSpeed;
   else if (teclesPremes['ArrowRight'] || teclesPremes['d'] || teclesPremes['D']) jugador.velocityX = jugador.moveSpeed;
   else jugador.velocityX = 0;
@@ -438,7 +438,7 @@ function update(deltaTime) {
     jugador.onGround = true;
   }
 
-  // Colisiones simples
+  // Col·lisions simples
   if (jugador.velocityY > 0) {
     for (let plat of plataformasEstaticas) {
       if (jugador.y + jugador.height >= plat.y &&
@@ -472,7 +472,7 @@ function update(deltaTime) {
     }
   }
 
-  // Envío estado al servidor (solo si hay partida)
+  // Enviar estat al servidor (només si hi ha partida)
   const now2 = Date.now();
   if (now2 - lastServerUpdate > 100 && idJoc) {
     lastServerUpdate = now2;
@@ -516,7 +516,7 @@ function render() {
     ctx.fillText(`+${plataformaPuntos.points}`, plataformaPuntos.x + plataformaPuntos.width / 2, plataformaPuntos.y - 5);
   }
 
-  // Oponente
+  // Oponent
   ctx.fillStyle = oponent.color;
   ctx.fillRect(oponent.x, oponent.y, jugador.width, jugador.height);
   ctx.strokeStyle = '#000';
@@ -543,16 +543,16 @@ function render() {
   ctx.fillText(`Punts: ${jugador.score}`, 10, 30);
 }
 
-// ===== RESULTADO + SALIDA LIMPIA =====
+// ===== RESULTAT + SORTIDA NETA =====
 function showResultScreen(won, myScore, opponentScore, options = {}) {
-  document.getElementById('resultIcon').textContent = won ? '🏆' : '☠️';
+  document.getElementById('resultIcon').textContent = won ? '🏆' : '☹️';
   document.getElementById('resultTitle').textContent = won ? 'Has Guanyat!' : 'Has Perdut!';
   document.getElementById('finalScoreSelf').textContent = myScore;
   document.getElementById('finalScoreOpponent').textContent = opponentScore;
   document.getElementById('viewProfileBtn').style.display = isAuthenticated ? 'block' : 'none';
   showScreen('resultScreen');
 
-  // Limpia loop y canvas
+  // Limpia loop i canvas
   stopGameLoop();
   canvas.style.visibility = 'hidden';
 
@@ -573,7 +573,7 @@ function leaveGame() {
   }
 }
 
-// Notifica abandono al servidor
+// Notifica abandonament al servidor
 function safeLeave() {
   clearStatusPoll();
   stopGameLoop();
@@ -583,7 +583,7 @@ function safeLeave() {
   }
 }
 
-// Reseteo completo de partida
+// Reseteg complet de partida
 function resetGame(hideCanvas = false) {
   guanyador = null;
   stopGameLoop();
@@ -618,10 +618,10 @@ function resetGame(hideCanvas = false) {
   if (hideCanvas) canvas.style.visibility = 'hidden';
 }
 
-// Al cerrar pestaña/recargar: abandono limpio
+// Al tancar pestanya/recarregar: abandonament net
 window.addEventListener('beforeunload', () => {
   try { if (idJoc) navigator.sendBeacon(`/game.php?action=leave&game_id=${idJoc}`); } catch {}
 });
 
-// ===== INICIALIZACIÓN =====
+// ===== INICIALITZACIÓ =====
 checkAuthentication();

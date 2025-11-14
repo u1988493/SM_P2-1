@@ -1,19 +1,19 @@
 RewriteEngine On
 RewriteBase /
 
-# Si el archivo existe, servilo directamente
+# Si el arxiu existeix, serveixlo directamente
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
-# Si es un directorio, servilo directamente
+# Si es un directori, serveixlo directamente
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
-# Para Azure, asegurarse de que PHP maneje los archivos .php
+# Per Azure, asegurarse de que PHP tingui els arxius .php
 <FilesMatch "\.php$">
     SetHandler application/x-httpd-php
 </FilesMatch>
 
-# Habilitar CORS si es necesario
+# Habilitar CORS si es necessari
 Header add Access-Control-Allow-Origin "*"
 Header add Access-Control-Allow-Methods "GET, POST, OPTIONS"
