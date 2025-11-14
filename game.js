@@ -33,6 +33,12 @@ let jugador = {
 };
 
 let oponent = { x: 350, y: 550, score: 0, color: '#4ECDC4' };
+// Para interpolación suave del oponente (reducir lag)
+let oponentLastX = 350, oponentLastY = 550;
+let oponentTargetX = 350, oponentTargetY = 550;
+let oponentUpdateTime = 0;
+const OPONENT_INTERPOLATION_SPEED = 0.12; // Suavidad de interpolación
+
 let plataformasEstaticas = [];
 let plataformaPuntos = null;
 let teclesPremes = {};
@@ -40,6 +46,10 @@ let lastJumpTime = 0;
 
 let pingMs = 0, pingHistory = [];
 const maxPingHistory = 10;
+
+// Para enviar updates solo cuando la posición cambia significativamente
+let lastSentX = 50, lastSentY = 550;
+const POSITION_THRESHOLD = 3; // Solo enviar si cambió más de 3 pixels
 
 // ===== AUTENTICACIÃƒâ€œN LIGERA =====
 async function checkAuthentication() {
@@ -300,11 +310,15 @@ function comprovarEstatDelJoc() {
       // puntuaciones/posiciones
       if (esPrimerJugador) {
         jugador.color = '#FF6B6B'; oponent.color = '#4ECDC4';
-        oponent.x = joc.player2_x ?? 350; oponent.y = joc.player2_y ?? 550;
+        // Usar target para interpolación suave (no asignar directamente)
+        oponentTargetX = joc.player2_x ?? 350; 
+        oponentTargetY = joc.player2_y ?? 550;
         oponent.score = (joc.points?.[1]) || 0; jugador.score = (joc.points?.[0]) || 0;
       } else {
         jugador.color = '#4ECDC4'; oponent.color = '#FF6B6B';
-        oponent.x = joc.player1_x ?? 50; oponent.y = joc.player1_y ?? 550;
+        // Usar target para interpolación suave (no asignar directamente)
+        oponentTargetX = joc.player1_x ?? 50; 
+        oponentTargetY = joc.player1_y ?? 550;
         oponent.score = (joc.points?.[0]) || 0; jugador.score = (joc.points?.[1]) || 0;
       }
 
@@ -356,11 +370,11 @@ function comprovarEstatDelJoc() {
       }
 
       clearStatusPoll();
-      statusPollTimer = setTimeout(comprovarEstatDelJoc, 120);
+      statusPollTimer = setTimeout(comprovarEstatDelJoc, 250);  // Aumentado de 120ms a 250ms
     })
     .catch(() => {
       clearStatusPoll();
-      statusPollTimer = setTimeout(comprovarEstatDelJoc, 500);
+      statusPollTimer = setTimeout(comprovarEstatDelJoc, 600);  // Aumentado de 500ms a 600ms en caso de error
     });
 }
 
@@ -391,7 +405,19 @@ function gameLoop() {
 }
 
 function update(deltaTime) {
-  // Movimiento
+  // Interpolación suave del oponente para reducir lag visual
+  if (Math.abs(oponent.x - oponentTargetX) > 1) {
+    oponent.x += (oponentTargetX - oponent.x) * OPONENT_INTERPOLATION_SPEED;
+  } else {
+    oponent.x = oponentTargetX;
+  }
+  if (Math.abs(oponent.y - oponentTargetY) > 1) {
+    oponent.y += (oponentTargetY - oponent.y) * OPONENT_INTERPOLATION_SPEED;
+  } else {
+    oponent.y = oponentTargetY;
+  }
+
+  // Movimiento del jugador LOCAL (client-side prediction - no espera al servidor)
   if (teclesPremes['ArrowLeft'] || teclesPremes['a'] || teclesPremes['A']) jugador.velocityX = -jugador.moveSpeed;
   else if (teclesPremes['ArrowRight'] || teclesPremes['d'] || teclesPremes['D']) jugador.velocityX = jugador.moveSpeed;
   else jugador.velocityX = 0;
@@ -444,11 +470,14 @@ function update(deltaTime) {
     }
   }
 
-  // EnvÃƒÂ­o estado al servidor (solo si hay partida)
+  // Envío estado al servidor (solo si hay partida y cambió posición significativamente)
   const now = Date.now();
-  if (now - lastServerUpdate > 100 && idJoc) {
+  const distMoved = Math.abs(jugador.x - lastSentX) + Math.abs(jugador.y - lastSentY);
+  if ((distMoved > POSITION_THRESHOLD || now - lastServerUpdate > 200) && idJoc) {
     lastServerUpdate = now;
-    fetch(`/game.php?action=update&game_id=${idJoc}&x=${Math.round(jugador.x)}&y=${Math.round(jugador.y)}`).catch(() => {});
+    lastSentX = jugador.x;
+    lastSentY = jugador.y;
+    fetch(`/game.php?action=update&game_id=${idJoc}&x=${Math.round(jugador.x)}&y=${Math.round(jugador.y)}`, {keepalive: true}).catch(() => {});
   }
 }
 
@@ -462,11 +491,12 @@ function render() {
   ctx.lineWidth = 2;
   ctx.strokeRect(0, canvas.height - 10, canvas.width, 10);
 
+  // Renderizar plataformas (optimizado)
+  ctx.fillStyle = '#8B4513';
+  ctx.strokeStyle = '#654321';
+  ctx.lineWidth = 2;
   plataformasEstaticas.forEach(plat => {
-    ctx.fillStyle = '#8B4513';
     ctx.fillRect(plat.x, plat.y, plat.width, 10);
-    ctx.strokeStyle = '#654321';
-    ctx.lineWidth = 2;
     ctx.strokeRect(plat.x, plat.y, plat.width, 10);
   });
 
