@@ -343,12 +343,12 @@ function comprovarEstatDelJoc() {
         // AÃƒÆ’Ã‚Âºn esperando: ocultar canvas y parar loop para no "ver" juego
         if (joc.player1 && !joc.player2) {
           // Somos player1, esperando player2
-          document.getElementById('estat').textContent = `â³ Esperant que algÃº es connecti amb el codi...`;
+          document.getElementById('estat').textContent = `Esperant que algu es connecti...`;
         } else if (!joc.player1 && joc.player2) {
           // Somos player2, esperando player1
-          document.getElementById('estat').textContent = `â³ Conectat! Esperant al host...`;
+          document.getElementById('estat').textContent = `Connectat! Esperant al host...`;
         } else {
-          document.getElementById('estat').textContent = `â³ Esperant jugador...`;
+          document.getElementById('estat').textContent = `Esperant jugador...`;
         }
         canvas.style.visibility = 'hidden';
         stopGameLoop();
