@@ -1,5 +1,5 @@
 <?php
-// game.php - VersiÃ³n con autenticaciÃ³n Azure
+// game.php - Versión con autenticación Azure y lógica mejorada
 error_reporting(E_ALL);
 ini_set('display_errors', '0');
 
@@ -21,14 +21,14 @@ require_once __DIR__ . '/db.php';
 try {
     $db = getDb();
 } catch (Exception $e) {
-    echo json_encode(['error' => 'ConnexiÃ³ amb la base de dades fallida: ' . $e->getMessage()]);
+    echo json_encode(['error' => 'Connexió amb la base de dades fallida: ' . $e->getMessage()]);
     exit();
 }
 
-// Obtener informaciÃ³n de autenticaciÃ³n
+// Obtener información de autenticación
 $authInfo = getAzureAuthInfo();
 
-// Si estÃ¡ autenticado con Azure, usar ese ID
+// Si está autenticado con Azure, usar ese ID
 if ($authInfo['isAuthenticated']) {
     $player_id = $authInfo['userId'];
     $_SESSION['player_id'] = $player_id;
@@ -36,7 +36,7 @@ if ($authInfo['isAuthenticated']) {
     // Crear o actualizar usuario
     $user = getOrCreateUser($db, $player_id, $authInfo['userName'], $authInfo['userEmail']);
 } else {
-    // Fallback: usar sesiÃ³n PHP (para desarrollo local)
+    // Fallback: usar sesión PHP (para desarrollo local)
     if (!isset($_SESSION['player_id'])) {
         $_SESSION['player_id'] = 'guest_' . uniqid();
     }
@@ -45,7 +45,7 @@ if ($authInfo['isAuthenticated']) {
 
 $accio = isset($_GET['action']) ? $_GET['action'] : '';
 
-// FunciÃ³n para generar plataformas estÃ¡ticas (diseÃ±o original)
+// Función para generar plataformas estáticas (diseño original)
 function generarPlataformasEstaticas() {
     $plataformas = [
         ['x' => 50, 'y' => 480, 'width' => 80],
@@ -62,7 +62,7 @@ function generarPlataformasEstaticas() {
     return json_encode($plataformas);
 }
 
-// FunciÃ³n para generar una plataforma de puntos aleatoria
+// Función para generar una plataforma de puntos aleatoria
 function generarPlataformaPuntos() {
     $ancho_juego = 400;
     $alto_juego = 600;
@@ -115,7 +115,7 @@ function finalizarPartida($db, $gameId, $winnerId, $player1Id, $player2Id, $scor
     $stmt = $db->prepare('UPDATE games SET winner_id = ?, finished_at = CURRENT_TIMESTAMP WHERE game_id = ?');
     $stmt->execute([$winnerId, $gameId]);
     
-    // Actualizar estadÃ­sticas del jugador 1
+    // Actualizar estadísticas del jugador 1
     if ($player1Id && strpos($player1Id, 'guest_') !== 0) {
         $won1 = ($player1Id === $winnerId) ? 1 : 0;
         $stmt = $db->prepare('UPDATE users SET games_played = games_played + 1, games_won = games_won + ?, total_score = total_score + ? WHERE user_id = ?');
@@ -125,7 +125,7 @@ function finalizarPartida($db, $gameId, $winnerId, $player1Id, $player2Id, $scor
         $stmt->execute([$gameId, $player1Id, $score1, $won1]);
     }
     
-    // Actualizar estadÃ­sticas del jugador 2
+    // Actualizar estadísticas del jugador 2
     if ($player2Id && strpos($player2Id, 'guest_') !== 0) {
         $won2 = ($player2Id === $winnerId) ? 1 : 0;
         $stmt = $db->prepare('UPDATE users SET games_played = games_played + 1, games_won = games_won + ?, total_score = total_score + ? WHERE user_id = ?');
@@ -145,24 +145,36 @@ switch ($accio) {
         $room_code = isset($input['room_code']) ? strtoupper(trim($input['room_code'])) : null;
 
         if ($room_code) {
-            // MODO LOCAL: Buscar o crear sala con cÃ³digo
+            // MODO LOCAL: Buscar o crear sala con código
             $stmt = $db->prepare('SELECT game_id, player1_id, player2_id FROM games WHERE game_id = ? AND winner_id IS NULL');
             $stmt->execute([$room_code]);
             $joc_existent = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($joc_existent) {
-                // La sala existe, unirse como player2
-                if ($joc_existent['player2_id']) {
-                    // Sala llena
-                    echo json_encode(['error' => 'Sala plena']);
+                // La sala existe
+                // Validar que no sea el mismo jugador uniéndose dos veces
+                if ($joc_existent['player1_id'] === $player_id) {
+                    echo json_encode(['error' => 'Ja estàs en aquesta sala']);
                     break;
                 }
                 
+                if ($joc_existent['player2_id'] === $player_id) {
+                    echo json_encode(['error' => 'Ja estàs en aquesta sala']);
+                    break;
+                }
+                
+                if ($joc_existent['player2_id']) {
+                    // Sala llena
+                    echo json_encode(['error' => 'Sala plena - ja hi ha 2 jugadors']);
+                    break;
+                }
+                
+                // Unirse como player2
                 $game_id = $joc_existent['game_id'];
                 $stmt = $db->prepare('UPDATE games SET player2_id = ? WHERE game_id = ?');
                 $stmt->execute([$player_id, $game_id]);
             } else {
-                // Crear nueva sala con el cÃ³digo como game_id
+                // Crear nueva sala con el código como game_id
                 $game_id = $room_code;
                 $platforms_estaticas = generarPlataformasEstaticas();
                 $platform_puntos = json_encode(generarPlataformaPuntos());
@@ -171,20 +183,31 @@ switch ($accio) {
                 $stmt->execute([$game_id, $player_id, $platforms_estaticas, $platform_puntos]);
             }
         } else {
-            // MODO ONLINE: Matchmaking automÃ¡tico
+            // MODO ONLINE: Matchmaking automático
             // Intentar unirse a un juego existente donde player2 sea null y NO tenga room code
-            $stmt = $db->prepare('SELECT game_id FROM games WHERE player2_id IS NULL AND winner_id IS NULL AND LENGTH(game_id) > 10 LIMIT 1');
+            $stmt = $db->prepare('SELECT game_id, player1_id FROM games WHERE player2_id IS NULL AND winner_id IS NULL AND LENGTH(game_id) > 10 LIMIT 1');
             $stmt->execute();
             $joc_existent = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($joc_existent) {
-                // Unirse al juego existente como player2
-                $game_id = $joc_existent['game_id'];
-                $stmt = $db->prepare('UPDATE games SET player2_id = ? WHERE game_id = ?');
-                $stmt->execute([$player_id, $game_id]);
+                // Validar que no sea el mismo jugador
+                if ($joc_existent['player1_id'] === $player_id) {
+                    // No se puede unir a tu propio juego, crear uno nuevo
+                    $game_id = uniqid() . uniqid();
+                    $platforms_estaticas = generarPlataformasEstaticas();
+                    $platform_puntos = json_encode(generarPlataformaPuntos());
+                    
+                    $stmt = $db->prepare('INSERT INTO games (game_id, player1_id, platforms, point_platform, player1_x, player1_y, player2_x, player2_y, player1_score, player2_score) VALUES (?, ?, ?, ?, 50, 550, 350, 550, 0, 0)');
+                    $stmt->execute([$game_id, $player_id, $platforms_estaticas, $platform_puntos]);
+                } else {
+                    // Unirse al juego existente como player2
+                    $game_id = $joc_existent['game_id'];
+                    $stmt = $db->prepare('UPDATE games SET player2_id = ? WHERE game_id = ?');
+                    $stmt->execute([$player_id, $game_id]);
+                }
             } else {
                 // Crear un nuevo juego como player1
-                $game_id = uniqid() . uniqid(); // ID largo para diferenciar de cÃ³digos de sala
+                $game_id = uniqid() . uniqid(); // ID largo para diferenciar de códigos de sala
                 $platforms_estaticas = generarPlataformasEstaticas();
                 $platform_puntos = json_encode(generarPlataformaPuntos());
                 
@@ -267,7 +290,7 @@ switch ($accio) {
             break;
         }
 
-        // Determinar quÃ© jugador hizo el update
+        // Determinar qué jugador hizo el update
         if ($joc['player1_id'] === $player_id) {
             $stmt = $db->prepare('UPDATE games SET player1_x = ?, player1_y = ? WHERE game_id = ?');
             $stmt->execute([$player_x, $player_y, $game_id]);
@@ -282,7 +305,7 @@ switch ($accio) {
     case 'collect':
         $game_id = $_GET['game_id'];
 
-        // Iniciar transacciÃ³n
+        // Iniciar transacción
         $db->beginTransaction();
 
         try {
@@ -309,7 +332,7 @@ switch ($accio) {
             $stmt = $db->prepare('UPDATE games SET point_platform = ? WHERE game_id = ?');
             $stmt->execute([json_encode($point_platform), $game_id]);
 
-            // Determinar quÃ© jugador recogiÃ³ la plataforma
+            // Determinar qué jugador recogió la plataforma
             $puntos_ganados = $point_platform['points'];
             
             if ($joc['player1_id'] === $player_id) {
@@ -344,8 +367,18 @@ switch ($accio) {
             echo json_encode(['error' => 'Error al recoger plataforma']);
         }
         break;
+
+    case 'leave':
+        // Acción para cuando un jugador abandona
+        if (isset($_GET['game_id'])) {
+            $game_id = $_GET['game_id'];
+            // Simplemente retornar success - el estado se verifica en status
+            echo json_encode(['success' => true]);
+        }
+        break;
         
     default:
-        echo json_encode(['error' => 'AcciÃ³ no reconeguda']);
+        echo json_encode(['error' => 'Acció no reconeguda']);
         break;
 }
+?>

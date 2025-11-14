@@ -199,7 +199,7 @@
             background: white;
             padding: 30px;
             border-radius: 15px;
-            max-width: 400px;
+            max-width: 450px;
             width: 90%;
             text-align: center;
         }
@@ -207,6 +207,43 @@
         .modal-content h2 {
             margin-bottom: 20px;
             color: #333;
+        }
+
+        .modal-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .modal-tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #999;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .modal-tab.active {
+            color: #0078d4;
+            border-bottom-color: #0078d4;
+        }
+
+        .modal-tab:hover {
+            color: #0078d4;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         .input-group {
@@ -223,19 +260,51 @@
             text-transform: uppercase;
         }
 
+        .input-group input:focus {
+            outline: none;
+            border-color: #0078d4;
+            background: #f0f8ff;
+        }
+
         .room-code-display {
-            background: #f5f5f5;
-            padding: 20px;
+            background: #f0f8ff;
+            padding: 25px;
             border-radius: 10px;
             margin: 20px 0;
+            border: 2px dashed #0078d4;
         }
 
         .room-code {
-            font-size: 32px;
+            font-size: 48px;
             font-weight: bold;
             color: #0078d4;
-            letter-spacing: 5px;
-            font-family: monospace;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+        }
+
+        .copy-button {
+            background: #0078d4;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .copy-button:hover {
+            background: #106ebe;
+        }
+
+        .waiting-message {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #ffc107;
         }
 
         .modal-buttons {
@@ -246,6 +315,12 @@
 
         .modal-buttons button {
             flex: 1;
+        }
+
+        .divider {
+            margin: 20px 0;
+            color: #ccc;
+            font-size: 14px;
         }
 
         /* JUEGO */
@@ -311,9 +386,10 @@
         #estat {
             color: white;
             font-weight: bold;
-            font-size: 20px;
+            font-size: 18px;
             margin: 15px 0;
             text-align: center;
+            white-space: pre-wrap;
         }
 
         /* RESULTADO */
@@ -361,6 +437,11 @@
             .mode-grid {
                 grid-template-columns: 1fr;
             }
+
+            .room-code {
+                font-size: 36px;
+                letter-spacing: 5px;
+            }
         }
     </style>
 </head>
@@ -392,7 +473,7 @@
                 <li>⭐ Recull plataformes daurades per guanyar punts</li>
                 <li>🏆 Primer a 100 punts guanya la partida</li>
                 <li>🌐 Mode Online: Juga amb qualsevol jugador</li>
-                <li>🏠 Mode Local: Crea una sala privada amb codi</li>
+                <li>🔐 Mode Local: Crea una sala privada amb codi</li>
                 <li>📊 Estadístiques (usuaris registrats)</li>
             </ul>
         </div>
@@ -406,7 +487,7 @@
         </p>
     </div>
 
-    <!-- MENÚ DE SELECCIÓ DE MODO -->
+    <!-- MENÚ DE SELECCIÓN DE MODO -->
     <div id="modeMenu">
         <h2 style="margin-bottom: 10px;">Selecciona el Mode de Joc</h2>
         <p style="color: #666; margin-bottom: 30px;">Tria com vols jugar</p>
@@ -419,7 +500,7 @@
             </div>
 
             <div class="mode-card" onclick="showLocalModal()">
-                <div class="mode-card-icon">🏠</div>
+                <div class="mode-card-icon">🔐</div>
                 <h3>Partida Local</h3>
                 <p>Crea o uneix-te a una sala privada amb codi</p>
             </div>
@@ -431,31 +512,50 @@
     <!-- MODAL SALA LOCAL -->
     <div id="localModal">
         <div class="modal-content">
-            <h2>🏠 Partida Local</h2>
-            <p style="color: #666; margin-bottom: 20px;">Tria una opció:</p>
-
-            <button class="btn btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="createRoom()">
-                Crear Sala Nova
-            </button>
-
-            <div style="margin: 20px 0; color: #999;">- o bé -</div>
-
-            <div class="input-group">
-                <input type="text" id="roomCodeInput" placeholder="Introdueix codi de sala" maxlength="6">
+            <h2>🔐 Partida Local</h2>
+            
+            <div class="modal-tabs">
+                <button class="modal-tab active" onclick="switchTab('create')">📝 Crear Sala</button>
+                <button class="modal-tab" onclick="switchTab('join')">🔗 Unir-se</button>
             </div>
 
-            <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="closeLocalModal()">Cancel·lar</button>
-                <button class="btn btn-success" onclick="joinRoom()">Unir-se</button>
-            </div>
+            <!-- TAB: CREAR SALA -->
+            <div id="create-tab" class="tab-content active">
+                <p style="color: #666; margin-bottom: 20px;">Genera un codi per que altres es puguin unir:</p>
+                
+                <button class="btn btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="createRoom()">
+                    ✨ Crear Sala Nova
+                </button>
 
-            <!-- Panel para mostrar código de sala creada -->
-            <div id="roomCreatedPanel" style="display: none; margin-top: 20px;">
-                <p style="color: #666; margin-bottom: 10px;">Sala creada! Comparteix aquest codi:</p>
-                <div class="room-code-display">
-                    <div class="room-code" id="createdRoomCode">ABC123</div>
+                <!-- Panel para mostrar código de sala creada -->
+                <div id="roomCreatedPanel" style="display: none; margin-top: 20px;">
+                    <div class="waiting-message">
+                        ⏳ Esperant que l'altre jugador s'uneixi...
+                    </div>
+                    <p style="color: #666; margin-bottom: 10px;">Comparteix aquest codi:</p>
+                    <div class="room-code-display">
+                        <div class="room-code" id="createdRoomCode">ABC123</div>
+                        <button class="copy-button" onclick="copyRoomCode()">📋 Copiar codi</button>
+                    </div>
                 </div>
-                <p style="font-size: 13px; color: #999; margin-bottom: 15px;">Esperant que l'altre jugador s'uneixi...</p>
+            </div>
+
+            <!-- TAB: UNIR-SE -->
+            <div id="join-tab" class="tab-content">
+                <p style="color: #666; margin-bottom: 20px;">Introdueix el codi que t'ha donat l'altre jugador:</p>
+                
+                <div class="input-group">
+                    <input type="text" id="roomCodeInput" placeholder="Introdueix codi de sala (6 caràcters)" maxlength="6">
+                </div>
+
+                <div class="modal-buttons">
+                    <button class="btn btn-secondary" onclick="closeLocalModal()">Cancellar</button>
+                    <button class="btn btn-success" onclick="joinRoom()">✅ Unir-se</button>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="closeLocalModal()" style="width: 100%;">Tancar</button>
             </div>
         </div>
     </div>
@@ -478,7 +578,7 @@
         <div id="ping">Ping: -- ms</div>
         <canvas id="canvas" width="400" height="600"></canvas>
         <div class="controls">
-            <strong>Controls:</strong> ⬅️ ➡️ per moure, Espai per saltar<br>
+            <strong>Controls:</strong> ⬅️ ➡️ per moure, Espai o ⬆️ per saltar<br>
             <strong>Objectiu:</strong> Primer a 100 punts guanya!
         </div>
     </div>
@@ -510,6 +610,29 @@
             🏠 Menú Principal
         </button>
     </div>
+
+    <script>
+        // Funciones auxiliares para el modal
+        function switchTab(tabName) {
+            const tabs = document.querySelectorAll('.modal-tab');
+            const contents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+
+        function copyRoomCode() {
+            const code = document.getElementById('createdRoomCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('Codi copiat al porta-retalls!');
+            }).catch(() => {
+                alert('No s\'ha pogut copiar el codi');
+            });
+        }
+    </script>
 
     <script src="game.js"></script>
 </body>
