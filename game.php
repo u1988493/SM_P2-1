@@ -36,14 +36,11 @@ if ($authInfo['isAuthenticated']) {
     // Crear o actualizar usuario
     $user = getOrCreateUser($db, $player_id, $authInfo['userName'], $authInfo['userEmail']);
 } else {
-    // Fallback: usar cookie para mantener ID consistente entre requests
-    if (!isset($_COOKIE['guest_player_id'])) {
-        $player_id = 'guest_' . uniqid() . '_' . mt_rand(10000, 99999);
-        setcookie('guest_player_id', $player_id, time() + 3600 * 24, '/'); // 24 horas
-        $_COOKIE['guest_player_id'] = $player_id;
-    } else {
-        $player_id = $_COOKIE['guest_player_id'];
+    // Fallback: usar sesiÃ³n PHP (para desarrollo local)
+    if (!isset($_SESSION['player_id'])) {
+        $_SESSION['player_id'] = 'guest_' . uniqid();
     }
+    $player_id = $_SESSION['player_id'];
 }
 
 $accio = isset($_GET['action']) ? $_GET['action'] : '';
@@ -128,7 +125,7 @@ function finalizarPartida($db, $gameId, $winnerId, $player1Id, $player2Id, $scor
         $stmt->execute([$gameId, $player1Id, $score1, $won1]);
     }
     
-    // Actualizar estadÃ­sticas del jugador 2  
+    // Actualizar estadÃ­sticas del jugador 2
     if ($player2Id && strpos($player2Id, 'guest_') !== 0) {
         $won2 = ($player2Id === $winnerId) ? 1 : 0;
         $stmt = $db->prepare('UPDATE users SET games_played = games_played + 1, games_won = games_won + ?, total_score = total_score + ? WHERE user_id = ?');
@@ -349,6 +346,6 @@ switch ($accio) {
         break;
         
     default:
-        echo json_encode(['error' => 'Acció no reconeguda']);
+        echo json_encode(['error' => 'AcciÃ³ no reconeguda']);
         break;
 }
