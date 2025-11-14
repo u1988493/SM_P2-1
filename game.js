@@ -84,6 +84,13 @@ function showScreen(screenId) {
 }
 
 function showModeMenu() {
+  // Verificar autenticación PRIMERO
+  if (!isAuthenticated) {
+    alert("Has d'iniciar sessió per poder jugar.");
+    window.location.href = '/.auth/login/aad?post_login_redirect_uri=/index.html';
+    return;
+  }
+  
   currentGameMode = null;
   currentRoomCode = null;
   showScreen('modeMenu');
@@ -97,13 +104,6 @@ function backToMainMenu() {
 
 // ===== MODO ONLINE =====
 function startOnlineGame() {
-  // Verificar autenticación
-  if (!isAuthenticated) {
-    alert("Has d'iniciar sessió per poder jugar.");
-    window.location.href = '/.auth/login/aad?post_login_redirect_uri=/index.html';
-    return;
-  }
-  
   currentGameMode = 'online';
   currentRoomCode = null;
   document.getElementById('gameRoomInfo').textContent = 'Mode Online';
@@ -115,12 +115,6 @@ function startOnlineGame() {
 
 // ===== MODO LOCAL (código de sala) =====
 function showLocalModal() {
-  // Verificar autenticación
-  if (!isAuthenticated) {
-    alert("Has d'iniciar sessió per poder jugar.");
-    window.location.href = '/.auth/login/aad?post_login_redirect_uri=/index.html';
-    return;
-  }
   document.getElementById('localModal').style.display = 'flex';
   document.getElementById('roomCodeInput').value = '';
   document.getElementById('roomCreatedPanel').style.display = 'none';
