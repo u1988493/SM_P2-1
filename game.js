@@ -1,4 +1,4 @@
-// game.js — versión con "espera sin juego" y reseteo limpio entre partidas
+// game.js â€” versiÃ³n con "espera sin juego" y reseteo limpio entre partidas
 
 // ===== ESTADO GLOBAL =====
 let isAuthenticated = false;
@@ -22,7 +22,7 @@ let gameRAF = null;             // id de requestAnimationFrame
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-// El canvas estará oculto mientras no haya rival
+// El canvas estarÃ¡ oculto mientras no haya rival
 canvas.style.visibility = 'hidden';
 
 let jugador = {
@@ -41,7 +41,7 @@ let lastJumpTime = 0;
 let pingMs = 0, pingHistory = [];
 const maxPingHistory = 10;
 
-// ===== AUTENTICACIÓN LIGERA =====
+// ===== AUTENTICACIÃ“N LIGERA =====
 async function checkAuthentication() {
   try {
     const r = await fetch('/perfil.php?whoami=1', { credentials: 'include' });
@@ -69,7 +69,7 @@ function updateUserDisplay(userName, authenticated) {
   document.getElementById('gameUserAvatar').textContent = userName.charAt(0).toUpperCase();
 }
 
-// ===== NAVEGACIÓN =====
+// ===== NAVEGACIÃ“N =====
 function showScreen(screenId) {
   const screens = ['mainMenu', 'modeMenu', 'gameContainer', 'resultScreen'];
   screens.forEach(id => { document.getElementById(id).style.display = 'none'; });
@@ -99,8 +99,13 @@ function startOnlineGame() {
   unirseAlJoc();
 }
 
-// ===== MODO LOCAL (código de sala) =====
+// ===== MODO LOCAL (cÃ³digo de sala) =====
 function showLocalModal() {
+  if (!isAuthenticated) {
+    alert('Debes iniciar sesión para jugar.');
+    window.location.href = '/.auth/login/aad?post_login_redirect_uri=/index.html';
+    return;
+  }
   document.getElementById('localModal').style.display = 'flex';
   document.getElementById('roomCodeInput').value = '';
   document.getElementById('roomCreatedPanel').style.display = 'none';
@@ -135,7 +140,7 @@ async function createRoom() {
     document.getElementById('roomCreatedPanel').style.display = 'block';
     document.getElementById('gameRoomInfo').textContent = `Sala: ${currentRoomCode}`;
 
-    // Aún NO mostramos canvas; esperamos a que haya rival
+    // AÃºn NO mostramos canvas; esperamos a que haya rival
     canvas.style.visibility = 'hidden';
     comprovarSalaLocal();
   } catch (e) { alert('Error creant la sala: ' + e.message); }
@@ -143,7 +148,7 @@ async function createRoom() {
 
 async function joinRoom() {
   const code = document.getElementById('roomCodeInput').value.trim().toUpperCase();
-  if (!code || code.length !== 6) { alert('Si us plau, introdueix un codi de 6 caràcters'); return; }
+  if (!code || code.length !== 6) { alert('Si us plau, introdueix un codi de 6 carÃ cters'); return; }
 
   currentGameMode = 'local';
   currentRoomCode = code;
@@ -176,7 +181,7 @@ async function comprovarSalaLocal() {
     if (joc.player1 && joc.player2) {
       closeLocalModal();
       showScreen('gameContainer');
-      canvas.style.visibility = 'hidden'; // se activará al tener 2 jugadores y lanzar loop
+      canvas.style.visibility = 'hidden'; // se activarÃ¡ al tener 2 jugadores y lanzar loop
       comprovarEstatDelJoc();
     } else {
       setTimeout(comprovarSalaLocal, 1000);
@@ -186,7 +191,7 @@ async function comprovarSalaLocal() {
   }
 }
 
-// ===== CONEXIÓN / ESTADO DE PARTIDA =====
+// ===== CONEXIÃ“N / ESTADO DE PARTIDA =====
 function unirseAlJoc() {
   const body = currentRoomCode ? JSON.stringify({ room_code: currentRoomCode }) : '{}';
 
@@ -251,7 +256,7 @@ function startGameLoop() {
 }
 
 function setStartPositions() {
-  // Coloca posiciones iniciales NÍTIDAS al arrancar partida
+  // Coloca posiciones iniciales NÃTIDAS al arrancar partida
   jugador.x = esPrimerJugador ? 50 : 350;
   jugador.y = 550;
   jugador.velocityX = 0;
@@ -314,7 +319,7 @@ function comprovarEstatDelJoc() {
       }
 
       if (bothThere) {
-        // Mostrar canvas ahora sí
+        // Mostrar canvas ahora sÃ­
         canvas.style.visibility = 'visible';
         document.getElementById('estat').textContent = 'Carrera en curs!';
         if (!gameWasRunning) {
@@ -325,7 +330,7 @@ function comprovarEstatDelJoc() {
         gameWasRunning = true;
         startGameLoop();
       } else {
-        // Aún esperando: ocultar canvas y parar loop para no "ver" juego
+        // AÃºn esperando: ocultar canvas y parar loop para no "ver" juego
         document.getElementById('estat').textContent = esPrimerJugador ? `Esperant ${p2Name}...` : 'Esperant l\'host...';
         canvas.style.visibility = 'hidden';
         stopGameLoop();
@@ -421,7 +426,7 @@ function update(deltaTime) {
     }
   }
 
-  // Envío estado al servidor (solo si hay partida)
+  // EnvÃ­o estado al servidor (solo si hay partida)
   const now = Date.now();
   if (now - lastServerUpdate > 100 && idJoc) {
     lastServerUpdate = now;
@@ -494,7 +499,7 @@ function render() {
 
 // ===== RESULTADO + SALIDA LIMPIA =====
 function showResultScreen(won, myScore, opponentScore, options = {}) {
-  document.getElementById('resultIcon').textContent = won ? '🎉' : '😢';
+  document.getElementById('resultIcon').textContent = won ? 'ðŸŽ‰' : 'ðŸ˜¢';
   document.getElementById('resultTitle').textContent = won ? 'Has Guanyat!' : 'Has Perdut!';
   document.getElementById('finalScoreSelf').textContent = myScore;
   document.getElementById('finalScoreOpponent').textContent = opponentScore;
@@ -571,10 +576,10 @@ function resetGame(hideCanvas = false) {
   if (hideCanvas) canvas.style.visibility = 'hidden';
 }
 
-// Al cerrar pestaña/recargar: abandono limpio
+// Al cerrar pestaÃ±a/recargar: abandono limpio
 window.addEventListener('beforeunload', () => {
   try { if (idJoc) navigator.sendBeacon(`/game.php?action=leave&game_id=${idJoc}`); } catch {}
 });
 
-// ===== INICIALIZACIÓN =====
+// ===== INICIALIZACIÃ“N =====
 checkAuthentication();
