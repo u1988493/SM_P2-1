@@ -372,9 +372,9 @@ function comprovarEstatDelJoc() {
       } else {
         // Encara esperant: ocultar canvas i parar loop
         if (joc.player1 && !joc.player2) {
-          document.getElementById('estat').textContent = `⏳ Sou player 1\nEsperant player 2...`;
+          document.getElementById('estat').textContent = `⏳ Ets Jugador 1\nEsperant Jugador 2...`;
         } else if (!joc.player1 && joc.player2) {
-          document.getElementById('estat').textContent = `⏳ Conectat com a player 2\nEsperant al host...`;
+          document.getElementById('estat').textContent = `⏳ Conectat com a Jugador 2\nEsperant al host...`;
         } else {
           document.getElementById('estat').textContent = `⏳ Esperant jugador...`;
         }
