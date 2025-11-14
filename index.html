@@ -2,7 +2,6 @@
 <html lang="ca">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carrera de Plataformes</title>
     <style>
         * {
@@ -392,7 +391,7 @@
                 <li>⭐ Recull plataformes daurades per guanyar punts</li>
                 <li>🏆 Primer a 100 punts guanya la partida</li>
                 <li>🌐 Mode Online: Juga amb qualsevol jugador</li>
-                <li>🏠 Mode Local: Crea una sala privada amb codi</li>
+                <li>🔐 Mode Sala Privada: Crea una sala amb codi</li>
                 <li>📊 Estadístiques (usuaris registrats)</li>
             </ul>
         </div>
@@ -406,7 +405,7 @@
         </p>
     </div>
 
-    <!-- MENÚ DE SELECCIÓ DE MODO -->
+    <!-- MENÚ DE SELECCIÓN DE MODO -->
     <div id="modeMenu">
         <h2 style="margin-bottom: 10px;">Selecciona el Mode de Joc</h2>
         <p style="color: #666; margin-bottom: 30px;">Tria com vols jugar</p>
@@ -419,20 +418,20 @@
             </div>
 
             <div class="mode-card" onclick="showLocalModal()">
-                <div class="mode-card-icon">🏠</div>
-                <h3>Partida Local</h3>
-                <p>Crea o uneix-te a una sala privada amb codi</p>
+                <div class="mode-card-icon">🔐</div>
+                <h3>Sala Privada</h3>
+                <p>Crea o uneix-te a una sala multijugador amb codi</p>
             </div>
         </div>
 
         <button class="btn btn-secondary" onclick="backToMainMenu()">⬅️ Tornar</button>
     </div>
 
-    <!-- MODAL SALA LOCAL -->
+    <!-- MODAL SALA PRIVADA -->
     <div id="localModal">
         <div class="modal-content">
-            <h2>🏠 Partida Local</h2>
-            <p style="color: #666; margin-bottom: 20px;">Tria una opció:</p>
+            <h2>🔐 Sala Privada</h2>
+            <p style="color: #666; margin-bottom: 20px;">Crea una sala i comparteix el codi amb un amic, o uneix-te a la seva sala:</p>
 
             <button class="btn btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="createRoom()">
                 Crear Sala Nova
@@ -445,7 +444,7 @@
             </div>
 
             <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="closeLocalModal()">Cancel·lar</button>
+                <button class="btn btn-secondary" onclick="closeLocalModal()">Cancellar</button>
                 <button class="btn btn-success" onclick="joinRoom()">Unir-se</button>
             </div>
 
@@ -485,7 +484,7 @@
 
     <!-- PANTALLA DE RESULTADO -->
     <div id="resultScreen">
-        <div class="result-icon" id="resultIcon">🥳</div>
+        <div class="result-icon" id="resultIcon">🎉</div>
         <div class="result-title" id="resultTitle">Has Guanyat!</div>
         <div class="result-stats" id="resultStats">
             <div class="stat-row">

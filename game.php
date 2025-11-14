@@ -128,7 +128,7 @@ function finalizarPartida($db, $gameId, $winnerId, $player1Id, $player2Id, $scor
         $stmt->execute([$gameId, $player1Id, $score1, $won1]);
     }
     
-    // Actualizar estadÃ­sticas del jugador 2
+    // Actualizar estadÃ­sticas del jugador 2  
     if ($player2Id && strpos($player2Id, 'guest_') !== 0) {
         $won2 = ($player2Id === $winnerId) ? 1 : 0;
         $stmt = $db->prepare('UPDATE users SET games_played = games_played + 1, games_won = games_won + ?, total_score = total_score + ? WHERE user_id = ?');
