@@ -2,6 +2,7 @@
 <html lang="ca">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carrera de Plataformes</title>
     <style>
         * {
@@ -19,7 +20,7 @@
             align-items: center;
         }
 
-        /* MENÃš PRINCIPAL */
+        /* MENÚ PRINCIPAL */
         #mainMenu {
             background: white;
             padding: 40px;
@@ -131,14 +132,7 @@
             transform: translateY(-2px);
         }
 
-        .btn-link {
-            background: transparent;
-            color: #0078d4;
-            text-decoration: underline;
-            padding: 10px;
-        }
-
-        /* MENÃš DE MODOS */
+        /* MENÚ DE MODOS */
         #modeMenu {
             display: none;
             background: white;
@@ -371,91 +365,91 @@
     </style>
 </head>
 <body>
-    <!-- MENÃš PRINCIPAL -->
+    <!-- MENÚ PRINCIPAL -->
     <div id="mainMenu">
-        <h1>ðŸŽ® Carrera de Plataformes</h1>
+        <h1>🎮 Carrera de Plataformes</h1>
         <p class="subtitle">Joc multijugador en temps real</p>
 
-        <!-- SecciÃ³n de usuario -->
+        <!-- Sección de usuario -->
         <div class="user-section">
             <div class="user-info-display">
-                <div class="user-avatar-small" id="menuUserAvatar">ðŸ‘¤</div>
+                <div class="user-avatar-small" id="menuUserAvatar">👤</div>
                 <div style="text-align: left;">
                     <div style="font-weight: bold; font-size: 14px;" id="menuUserName">Convidat</div>
                     <div style="font-size: 12px; color: #666;" id="menuUserStatus">Mode invitat</div>
                 </div>
             </div>
             <div>
-                <a href="/.auth/login/aad?post_login_redirect_uri=/index.html" class="btn btn-primary" id="menuLoginBtn" style="padding: 8px 16px; font-size: 14px;">Iniciar SessiÃ³</a>
-                <a href="/perfil.php" class="btn btn-primary" id="menuPerfilBtn" style="padding: 8px 16px; font-size: 14px; display: none;">ðŸ‘¤ Perfil</a>
+                <a href="/.auth/login/aad?post_login_redirect_uri=/index.html" class="btn btn-primary" id="menuLoginBtn" style="padding: 8px 16px; font-size: 14px;">Iniciar Sessió</a>
+                <a href="/perfil.php" class="btn btn-primary" id="menuPerfilBtn" style="padding: 8px 16px; font-size: 14px; display: none;">👤 Perfil</a>
             </div>
         </div>
 
         <div class="game-preview">
-            <h3>CaracterÃ­stiques:</h3>
+            <h3>Característiques:</h3>
             <ul class="features">
-                <li>ðŸƒ Partides 1v1 en temps real</li>
-                <li>â­ Recull plataformes daurades per guanyar punts</li>
-                <li>ðŸ† Primer a 100 punts guanya la partida</li>
-                <li>ðŸŒ Mode Online: Juga amb qualsevol jugador</li>
-                <li>ðŸ  Mode Local: Crea una sala privada amb codi</li>
-                <li>ðŸ“Š EstadÃ­stiques (usuaris registrats)</li>
+                <li>🏃 Partides 1v1 en temps real</li>
+                <li>⭐ Recull plataformes daurades per guanyar punts</li>
+                <li>🏆 Primer a 100 punts guanya la partida</li>
+                <li>🌐 Mode Online: Juga amb qualsevol jugador</li>
+                <li>🏠 Mode Local: Crea una sala privada amb codi</li>
+                <li>📊 Estadístiques (usuaris registrats)</li>
             </ul>
         </div>
 
         <button class="btn btn-success" style="width: 100%; font-size: 20px; padding: 20px;" onclick="showModeMenu()">
-            â–¶ï¸ JUGAR
+            ▶️ JUGAR
         </button>
 
         <p style="margin-top: 20px; font-size: 13px; color: #999;">
-            Registra't per guardar les teves estadÃ­stiques i competir en el rÃ nquing
+            Registra't per guardar les teves estadístiques i competir en el rànquing
         </p>
     </div>
 
-    <!-- MENÃš DE SELECCIÃ“N DE MODO -->
+    <!-- MENÚ DE SELECCIÓ DE MODO -->
     <div id="modeMenu">
         <h2 style="margin-bottom: 10px;">Selecciona el Mode de Joc</h2>
         <p style="color: #666; margin-bottom: 30px;">Tria com vols jugar</p>
 
         <div class="mode-grid">
             <div class="mode-card" onclick="startOnlineGame()">
-                <div class="mode-card-icon">ðŸŒ</div>
+                <div class="mode-card-icon">🌐</div>
                 <h3>Jugar Online</h3>
                 <p>Uneix-te a una partida amb un jugador aleatori</p>
             </div>
 
             <div class="mode-card" onclick="showLocalModal()">
-                <div class="mode-card-icon">ðŸ </div>
-                <h3>Sala Privada</h3>
-                <p>Crea o uneix-te a una sala multijugador amb codi</p>
+                <div class="mode-card-icon">🏠</div>
+                <h3>Partida Local</h3>
+                <p>Crea o uneix-te a una sala privada amb codi</p>
             </div>
         </div>
 
-        <button class="btn btn-secondary" onclick="backToMainMenu()">â¬…ï¸ Tornar</button>
+        <button class="btn btn-secondary" onclick="backToMainMenu()">⬅️ Tornar</button>
     </div>
 
     <!-- MODAL SALA LOCAL -->
     <div id="localModal">
         <div class="modal-content">
-            <h2>ðŸ  Sala Privada</h2>
-            <p style="color: #666; margin-bottom: 20px;">Crea una sala i comparteix el codi amb un amic, o uneix-te a la seva sala:</p>
+            <h2>🏠 Partida Local</h2>
+            <p style="color: #666; margin-bottom: 20px;">Tria una opció:</p>
 
             <button class="btn btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="createRoom()">
                 Crear Sala Nova
             </button>
 
-            <div style="margin: 20px 0; color: #999;">- o bÃ© -</div>
+            <div style="margin: 20px 0; color: #999;">- o bé -</div>
 
             <div class="input-group">
                 <input type="text" id="roomCodeInput" placeholder="Introdueix codi de sala" maxlength="6">
             </div>
 
             <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="closeLocalModal()">CancelÂ·lar</button>
+                <button class="btn btn-secondary" onclick="closeLocalModal()">Cancel·lar</button>
                 <button class="btn btn-success" onclick="joinRoom()">Unir-se</button>
             </div>
 
-            <!-- Panel para mostrar cÃ³digo de sala creada -->
+            <!-- Panel para mostrar código de sala creada -->
             <div id="roomCreatedPanel" style="display: none; margin-top: 20px;">
                 <p style="color: #666; margin-bottom: 10px;">Sala creada! Comparteix aquest codi:</p>
                 <div class="room-code-display">
@@ -470,7 +464,7 @@
     <div id="gameContainer">
         <div class="game-header">
             <div style="display: flex; align-items: center; gap: 10px;">
-                <div class="user-avatar-small" id="gameUserAvatar">ðŸ‘¤</div>
+                <div class="user-avatar-small" id="gameUserAvatar">👤</div>
                 <div style="text-align: left;">
                     <div style="font-weight: bold; font-size: 13px;" id="gameUserName">Jugador</div>
                     <div style="font-size: 11px; color: #666;" id="gameRoomInfo">Mode Online</div>
@@ -484,18 +478,18 @@
         <div id="ping">Ping: -- ms</div>
         <canvas id="canvas" width="400" height="600"></canvas>
         <div class="controls">
-            <strong>Controls:</strong> â¬…ï¸ âž¡ï¸ per moure, Espai per saltar<br>
+            <strong>Controls:</strong> ⬅️ ➡️ per moure, Espai per saltar<br>
             <strong>Objectiu:</strong> Primer a 100 punts guanya!
         </div>
     </div>
 
     <!-- PANTALLA DE RESULTADO -->
     <div id="resultScreen">
-        <div class="result-icon" id="resultIcon">ðŸŽ‰</div>
+        <div class="result-icon" id="resultIcon">🎉</div>
         <div class="result-title" id="resultTitle">Has Guanyat!</div>
         <div class="result-stats" id="resultStats">
             <div class="stat-row">
-                <span>La teva puntuaciÃ³:</span>
+                <span>La teva puntuació:</span>
                 <span id="finalScoreSelf" style="font-weight: bold; color: #0078d4;">0</span>
             </div>
             <div class="stat-row">
@@ -505,15 +499,15 @@
         </div>
 
         <button class="btn btn-primary" id="viewProfileBtn" style="width: 100%; margin-bottom: 10px; display: none;" onclick="window.location.href='/perfil.php'">
-            ðŸ‘¤ Veure Perfil
+            👤 Veure Perfil
         </button>
 
         <button class="btn btn-success" style="width: 100%; margin-bottom: 10px;" onclick="playAgain()">
-            ðŸ”„ Jugar de Nou
+            🔄 Jugar de Nou
         </button>
 
         <button class="btn btn-secondary" style="width: 100%;" onclick="backToMainMenu()">
-            ðŸ  MenÃº Principal
+            🏠 Menú Principal
         </button>
     </div>
 
