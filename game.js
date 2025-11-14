@@ -44,16 +44,23 @@ const maxPingHistory = 10;
 // ===== AUTENTICACIÃ“N LIGERA =====
 async function checkAuthentication() {
   try {
-    const r = await fetch('/perfil.php?whoami=1', { credentials: 'include' });
+    // Usar auth-handler.php que NO redirige automáticamente
+    const r = await fetch('/auth-handler.php', { credentials: 'include' });
     if (r.ok) {
       const d = await r.json().catch(() => ({}));
-      if (d && d.user_id) {
+      if (d && d.isAuthenticated) {
         isAuthenticated = true;
-        currentUserId = d.user_id;
-        currentUserName = d.user_name || 'Usuari';
+        currentUserId = d.userId;
+        currentUserName = d.userName || 'Usuari';
+      } else {
+        // Explícitamente NO autenticado
+        isAuthenticated = false;
+        currentUserName = 'Convidat';
       }
     }
-  } catch (_) {}
+  } catch (_) {
+    console.error('Error checking authentication:', _);
+  }
   updateUserDisplay(currentUserName, isAuthenticated);
 }
 
