@@ -517,7 +517,7 @@ function render() {
 
 // ===== RESULTADO + SALIDA LIMPIA =====
 function showResultScreen(won, myScore, opponentScore, options = {}) {
-  document.getElementById('resultIcon').textContent = won ? 'ðŸ¥³' : 'ðŸ˜¢';
+  document.getElementById('resultIcon').textContent = won ? '🏆' : '☠️';
   document.getElementById('resultTitle').textContent = won ? 'Has Guanyat!' : 'Has Perdut!';
   document.getElementById('finalScoreSelf').textContent = myScore;
   document.getElementById('finalScoreOpponent').textContent = opponentScore;
